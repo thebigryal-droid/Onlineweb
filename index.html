@@ -535,7 +535,6 @@
     if (window.feather) { window.feather.replace(); }
     if(localStorage.getItem('ryal_theme_v9') === 'light') document.body.classList.remove('dark-mode');
     
-    // Failsafe Timeout
     setTimeout(() => {
         const loader = document.getElementById('cloudLoader');
         if (loader && loader.style.display !== 'none') {
@@ -585,7 +584,6 @@
         } catch(e) { window.showAlert("Invalid VIP Link."); }
     };
 
-    // Check if a client is opening a VIP link
     if (window.location.hash.startsWith('#vip=')) {
         document.getElementById('cloudLoader').style.display = 'none';
         document.getElementById('authView').style.display = 'none';
@@ -593,7 +591,6 @@
         document.getElementById('vipPortal').style.display = 'block';
         window.loadVipPortal();
     } else {
-        // Normal Trainer Login System
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -701,7 +698,6 @@
         document.querySelectorAll('.section').forEach((el, index) => { el.style.animationDelay = `${index * 0.05}s`; });
     };
 
-    // --- MASTER RENDERER ---
     window.render = () => {
         window.renderPlanner();
         window.renderLeads();
@@ -790,7 +786,7 @@
         Object.keys(mData).sort().reverse().forEach(m => { 
             let net = mData[m].sal + mData[m].pt - mData[m].pen - mData[m].exp; let dailyHtml = ""; let sortedDays = Object.keys(mData[m].daily).sort().reverse(); 
             if(sortedDays.length > 0) { dailyHtml = `<div style="margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;"><div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Daily Breakdown (Excl. Expenses)</div>`; sortedDays.forEach(d => { let dayData = mData[m].daily[d]; let dayNet = dayData.sal + dayData.pt - dayData.pen; dailyHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px solid var(--bg);"><span style="font-weight:600;"><i data-feather="calendar" class="icon" style="color:var(--text-muted);"></i> <span style="color:var(--text);">${d}</span></span><span style="font-weight:800; color:${dayNet < 0 ? 'var(--danger)' : 'var(--text)'};">₹${dayNet.toFixed(0)}</span></div>`; }); dailyHtml += `</div>`; } 
-            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.02);" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:8px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:var(--bg); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> SAL: <b style="color:var(--text);">₹${mData[m].sal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
+            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.02);" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:10px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:var(--bg); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> SAL: <b style="color:var(--text);">₹${mData[m].sal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
         });
         document.getElementById('revView').innerHTML = revHtml || "<div style='font-size:13px; color:var(--text-muted); text-align:center; padding:10px;'>No financial data yet.</div>";
         document.getElementById('statRevenue').innerText = `₹${todayRev.toFixed(0)}`;
@@ -894,7 +890,7 @@
 
     window.openOv = (id) => {
         window.curID = id; const c = window.clients.find(x => x.id === id);
-        if(!c.meals) c.meals = []; if(!c.gallery) c.gallery = [];
+        if(!c.meals) c.meals = []; if(!c.gallery) c.gallery = []; if(!c.bca) c.bca = [];
         document.getElementById('clientOverlay').style.display = 'block'; document.getElementById('clientMenu').style.display = 'none'; document.getElementById('ovEditForm').style.display = 'none';
         document.getElementById('ovName').innerText = c.name;
         let phoneUI = c.phone ? `<span style="color:var(--info);"><i data-feather="phone" class="icon"></i> ${c.phone}</span> | ` : '';
@@ -906,8 +902,12 @@
         if(c.bca && c.bca.length > 0) { 
             const r = c.bca[0]; document.getElementById('inWeight').value = r.w||""; document.getElementById('inSmm').value = r.smm||""; document.getElementById('inPbf').value = r.pbf||""; document.getElementById('inBmi').value = r.bmi||""; document.getElementById('inScore').value = r.score||""; document.getElementById('inVisFat').value = r.visFat||""; document.getElementById('inBmr').value = r.bmr||""; 
         } else { document.querySelectorAll('#inWeight,#inSmm,#inPbf,#inBmi,#inScore,#inVisFat,#inBmr').forEach(el => { if(el) el.value=""; }); }
-        if(c.tdee && c.macros) { window.renderMealBuilder(); } else { document.getElementById('mealBuilderUI').style.display = 'none'; }
-        window.renderGallery(); window.renderBcaHistory(); window.renderTonnageChart(); feather.replace();
+        
+        window.renderMealBuilder(); 
+        window.renderGallery(); 
+        window.renderBcaHistory(); 
+        window.renderTonnageChart(); 
+        feather.replace();
     };
 
     window.toggleHistory = (id) => { const row = document.getElementById(`hist-${id}`); row.style.display = row.style.display === 'none' ? 'table-row' : 'none'; };
@@ -957,6 +957,7 @@
 
     window.saveBca = async () => {
         const c = window.clients.find(x => x.id === window.curID); 
+        if(!c.bca) c.bca = [];
         const d = document.getElementById('bcaDate').value || window.today; const w = parseFloat(document.getElementById('inWeight')?.value) || 0; const smm = parseFloat(document.getElementById('inSmm')?.value) || 0; const pbf = parseFloat(document.getElementById('inPbf')?.value) || 0; const bmi = parseFloat(document.getElementById('inBmi')?.value) || 0; const score = parseFloat(document.getElementById('inScore')?.value) || 0; const visFat = parseFloat(document.getElementById('inVisFat')?.value) || 0; const bmr = parseFloat(document.getElementById('inBmr')?.value) || 0;
         if(w === 0) { window.showAlert("Enter Weight to save log."); return; }
         const existingIdx = c.bca.findIndex(b => b.date === d);
@@ -978,7 +979,7 @@
 
     window.generateSmartPlan = async () => {
         const c = window.clients.find(x => x.id === window.curID);
-        const pbf = parseFloat(document.getElementById('inPbf').value) || 0; const w = parseFloat(document.getElementById('inWeight').value) || (c.bca.length > 0 ? c.bca[0].w : 0); const bmr = parseFloat(document.getElementById('inBmr').value) || 0; const act = parseFloat(document.getElementById('inActivity').value) || 1.2; const visFat = parseFloat(document.getElementById('inVisFat').value) || 0;
+        const pbf = parseFloat(document.getElementById('inPbf').value) || 0; const w = parseFloat(document.getElementById('inWeight').value) || (c.bca && c.bca.length > 0 ? c.bca[0].w : 0); const bmr = parseFloat(document.getElementById('inBmr').value) || 0; const act = parseFloat(document.getElementById('inActivity').value) || 1.2; const visFat = parseFloat(document.getElementById('inVisFat').value) || 0;
         if(bmr === 0 || w === 0) { window.showAlert("Please enter BMR and Weight first to calculate macros."); return; }
         let goal = pbf > 22 ? "Fat Loss (Deficit)" : "Hypertrophy (Surplus/Maint)"; if(pbf === 0) goal = "General Fitness";
         let tdee = Math.round(bmr * act); let targetCal = pbf > 22 ? tdee - 500 : tdee + 300; 
@@ -994,8 +995,8 @@
     window.fetchMacros = async () => {
         let food = document.getElementById('mbName').value; let amt = parseFloat(document.getElementById('mbQty').value) || 100; let unit = document.getElementById('mbUnit').value;
         if(!food) { window.showAlert("Enter a food name first to fetch its macros!"); return; }
-        let btn = document.querySelector('.btn-info[onclick="fetchMacros()"]'); let oldHtml = btn.innerHTML;
-        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i>`; feather.replace();
+        let btn = document.getElementById('btnFetchMacro'); let oldHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i> Fetching`; feather.replace();
         try {
             let url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&pageSize=1`;
             let res = await fetch(url); let data = await res.json();
@@ -1012,19 +1013,25 @@
     window.renderMealBuilder = () => {
         const c = window.clients.find(x => x.id === window.curID); const ui = document.getElementById('mealBuilderUI');
         if(!c.tdee || !c.macros) { ui.style.display = 'none'; return; }
-        let totalP=0, totalC=0, totalF=0, totalCal=0; c.meals.forEach(m => { totalP+=parseFloat(m.p); totalC+=parseFloat(m.c); totalF+=parseFloat(m.f); totalCal+=(m.p*4 + m.c*4 + m.f*9); });
+        let totalP=0, totalC=0, totalF=0, totalCal=0; (c.meals || []).forEach(m => { totalP+=parseFloat(m.p); totalC+=parseFloat(m.c); totalF+=parseFloat(m.f); totalCal+=(m.p*4 + m.c*4 + m.f*9); });
         let remCal = c.tdee - totalCal; let remP = c.macros.p - totalP; let remC = c.macros.c - totalC; let remF = c.macros.f - totalF;
         
         let mealHtml = "";
-        c.meals.forEach(m => {
+        (c.meals || []).forEach(m => {
             mealHtml += `<div class="history-row bg-override" style="background:var(--card); padding:12px 15px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; transition:transform 0.2s;"><div style="flex:1;"><b style="font-size:13px; color:var(--text);">${m.name}</b><div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">P:${m.p}g &nbsp;|&nbsp; C:${m.c}g &nbsp;|&nbsp; F:${m.f}g &nbsp;&bull;&nbsp; <b style="color:var(--text);">${Math.round(m.p*4 + m.c*4 + m.f*9)} kcal</b></div></div><button class="btn-action danger" onclick="delMeal(${m.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div>`;
         });
+        
+        let inputsHtml = `<div style="display:flex; flex-direction:column; gap:10px; margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
+            <div style="display:flex; gap:8px;"><input type="text" id="mbName" placeholder="Food item..." style="flex:2; margin:0;"><input type="number" id="mbQty" placeholder="Amt" style="flex:1; margin:0;" value="100"><select id="mbUnit" style="flex:1; margin:0; background:var(--card);"><option value="g">Grams</option><option value="qty">Quantity</option></select><button id="btnFetchMacro" class="btn-info" style="flex:1; padding:12px; margin:0; border-radius:12px;" onclick="fetchMacros()"><i data-feather="download-cloud" class="icon" style="margin:0;"></i></button></div>
+            <div style="display:flex; gap:8px;"><input type="number" id="mbP" placeholder="Pro (g)" style="flex:1; margin:0;"><input type="number" id="mbC" placeholder="Carb (g)" style="flex:1; margin:0;"><input type="number" id="mbF" placeholder="Fat (g)" style="flex:1; margin:0;"></div>
+            <button class="btn-main" style="width:100%; margin-top:5px;" onclick="addMeal()"><i data-feather="plus-circle" class="icon"></i> Add Food to Plan</button>
+        </div>`;
 
-        ui.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>${mealHtml}`;
+        ui.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>${mealHtml}${inputsHtml}`;
         ui.style.display = 'block'; feather.replace();
     };
 
-    window.addMeal = async () => { const c = window.clients.find(x => x.id === window.curID); let n = document.getElementById('mbName').value; let p = parseFloat(document.getElementById('mbP').value)||0; let carb = parseFloat(document.getElementById('mbC').value)||0; let f = parseFloat(document.getElementById('mbF').value)||0; if(!n) { window.showAlert("Enter a food name"); return; } c.meals.push({ id: Date.now(), name: n, p:p, c:carb, f:f }); await window.syncToCloud(); window.renderMealBuilder(); };
+    window.addMeal = async () => { const c = window.clients.find(x => x.id === window.curID); let n = document.getElementById('mbName').value; let p = parseFloat(document.getElementById('mbP').value)||0; let carb = parseFloat(document.getElementById('mbC').value)||0; let f = parseFloat(document.getElementById('mbF').value)||0; if(!n) { window.showAlert("Enter a food name"); return; } if(!c.meals) c.meals = []; c.meals.push({ id: Date.now(), name: n, p:p, c:carb, f:f }); await window.syncToCloud(); window.renderMealBuilder(); };
     window.delMeal = async (id) => { const c = window.clients.find(x => x.id === window.curID); c.meals = c.meals.filter(m => m.id !== id); await window.syncToCloud(); window.renderMealBuilder(); };
 
     window.loadSplit = (splitName) => {
@@ -1047,13 +1054,13 @@
         document.getElementById('searchRes').style.display = 'none'; document.getElementById('exSearch').value = ""; document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active'));
         if(isCustom) { let exists = false; Object.values(window.workoutDB).forEach(list => { if(list.includes(name)) exists = true; }); if(!exists) { window.workoutDB["Custom Exercises"].push(name); await window.syncToCloud(); } }
         window.curExName = name; document.getElementById('curEx').innerText = name;
-        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
+        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs || {}).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
         const recUI = document.getElementById('historyRecall'); if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; recUI.style.display = 'flex'; } else { recUI.style.display = 'none'; } window.generateSetInputs(); document.getElementById('setForm').style.display = 'block'; 
     };
 
     window.selSplitEx = (name, el) => {
         document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active')); el.classList.add('active'); window.curExName = name; document.getElementById('curEx').innerText = name;
-        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
+        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs || {}).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
         const recUI = document.getElementById('historyRecall'); if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; recUI.style.display = 'flex'; } else { recUI.style.display = 'none'; } window.generateSetInputs(); document.getElementById('setForm').style.display='block'; 
     };
 
@@ -1082,7 +1089,7 @@
     window.renderTonnageChart = () => {
         const c = window.clients.find(x => x.id === window.curID);
         if(window.tonnageChartInst) window.tonnageChartInst.destroy();
-        let tonnageMap = {}; Object.keys(c.logs).sort().forEach(date => { let dayTotal = 0; c.logs[date].forEach(ex => { if(ex.sets) ex.sets.forEach(s => { dayTotal += (parseFloat(s.w)||0) * (parseInt(s.r)||0); }); }); if(dayTotal > 0) tonnageMap[date] = dayTotal; });
+        let tonnageMap = {}; Object.keys(c.logs || {}).sort().forEach(date => { let dayTotal = 0; c.logs[date].forEach(ex => { if(ex.sets) ex.sets.forEach(s => { dayTotal += (parseFloat(s.w)||0) * (parseInt(s.r)||0); }); }); if(dayTotal > 0) tonnageMap[date] = dayTotal; });
         const dates = Object.keys(tonnageMap).slice(-10); const vols = dates.map(d => tonnageMap[d]);
         const style = getComputedStyle(document.body); let barColor = style.getPropertyValue('--primary').trim(); if(!barColor) barColor = '#c3f53c';
         const ctx = document.getElementById('tonnageChart').getContext('2d');
@@ -1119,7 +1126,7 @@
     window.generateMonthlyReportPDF = () => {
         let mStr = document.getElementById('reportMonthInput').value; if(!mStr) { window.showAlert("Please select a month first."); return; }
         let clientRowsHtml = ''; let sr = 1; let totalPtEarnedThisMonth = 0;
-        window.clients.forEach(c => { let doneThisMonth = Object.keys(c.logs).filter(d => d.startsWith(mStr)).length; let doneTotal = Object.keys(c.logs).length; if(doneThisMonth > 0 || (c.startDate && c.startDate.startsWith(mStr))) { let remSess = Math.max(0, (c.sess || 0) - doneTotal); let amtPerSess = ((c.pay||0)/(1+(c.gst||0))*(c.ret||0))/(c.sess||1); let earnedThisMonth = amtPerSess * doneThisMonth; totalPtEarnedThisMonth += earnedThisMonth; clientRowsHtml += `<tr><td>${sr++}</td><td><b>${c.name}</b></td><td>${c.receipt || '-'}</td><td>₹${c.pay || 0}</td><td>${c.startDate || '-'}</td><td>${c.endDate || '-'}</td><td>${c.sess || 0}</td><td style="background:#3b82f6; color:white; font-weight:bold;">${doneThisMonth}</td><td>${remSess}</td><td>₹${amtPerSess.toFixed(2)}</td><td style="color:#3b82f6; font-weight:bold;">₹${earnedThisMonth.toFixed(2)}</td></tr>`; } });
+        window.clients.forEach(c => { let doneThisMonth = Object.keys(c.logs || {}).filter(d => d.startsWith(mStr)).length; let doneTotal = Object.keys(c.logs || {}).length; if(doneThisMonth > 0 || (c.startDate && c.startDate.startsWith(mStr))) { let remSess = Math.max(0, (c.sess || 0) - doneTotal); let amtPerSess = ((c.pay||0)/(1+(c.gst||0))*(c.ret||0))/(c.sess||1); let earnedThisMonth = amtPerSess * doneThisMonth; totalPtEarnedThisMonth += earnedThisMonth; clientRowsHtml += `<tr><td>${sr++}</td><td><b>${c.name}</b></td><td>${c.receipt || '-'}</td><td>₹${c.pay || 0}</td><td>${c.startDate || '-'}</td><td>${c.endDate || '-'}</td><td>${c.sess || 0}</td><td style="background:#3b82f6; color:white; font-weight:bold;">${doneThisMonth}</td><td>${remSess}</td><td>₹${amtPerSess.toFixed(2)}</td><td style="color:#3b82f6; font-weight:bold;">₹${earnedThisMonth.toFixed(2)}</td></tr>`; } });
         if(clientRowsHtml === '') clientRowsHtml = `<tr><td colspan="11" style="text-align:center; padding:20px; color:#86868b;">No active client sessions recorded for this month.</td></tr>`;
         let shiftRowsHtml = ''; let daysWorked = 0; let daysLate = 0; let daysWeekOff = 0; let daysAbsent = 0; let totalSalEarned = 0;
         window.shifts.filter(s => s.date.startsWith(mStr)).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(s => { if(s.status === 'Present') daysWorked++; if(s.isLate) daysLate++; if(s.status === 'Week Off') daysWeekOff++; if(s.status === 'Absent') daysAbsent++; let hrs = 0; if(s.inTime && s.outTime) { let [inH, inM] = s.inTime.split(':').map(Number); let [outH, outM] = s.outTime.split(':').map(Number); hrs = ((outH * 60 + outM) - (inH * 60 + inM)) / 60; } totalSalEarned += (s.pay || 0); let statusLabel = s.status; if(s.isLate) statusLabel += ' (Late)'; if(s.isHalfDay) statusLabel += ' (Half Day)'; shiftRowsHtml += `<tr><td>${s.date}</td><td>${statusLabel}</td><td>${window.formatTime(s.inTime) || '-'}</td><td>${window.formatTime(s.outTime) || '-'}</td><td>${hrs.toFixed(1)} hrs</td><td>₹${(s.pay || 0).toFixed(2)}</td></tr>`; });
@@ -1195,6 +1202,30 @@
         printWindow.document.close();
     };
 
+    window.generateVIPLink = () => {
+        const c = window.clients.find(x => x.id === window.curID); 
+        let recentEx = []; 
+        let dates = Object.keys(c.logs || {}).sort().reverse(); 
+        if(dates.length > 0) recentEx = c.logs[dates[0]].map(l => l.name).slice(0, 8); 
+        
+        let safeBca = c.bca ? c.bca.slice(0, 10) : [];
+        
+        const payload = window.encodeToHash({ 
+            n: c.name, g: c.gender || '', a: c.age || '', h: c.height || '', 
+            bca: safeBca, tdee: c.tdee || 0, macros: c.macros || null, 
+            ex: recentEx, tName: window.trainerProfile.name 
+        });
+        
+        const url = window.location.href.split('#')[0] + '#vip=' + payload; 
+        
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                window.showAlert("VIP Link copied! It now automatically includes YouTube video guides for their most recent workout.");
+            }).catch(err => { prompt("Copy your VIP Link here:", url); });
+        } else {
+            prompt("Copy your VIP Link here:", url);
+        }
+    };
 </script>
 </body>
 </html>
