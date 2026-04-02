@@ -183,7 +183,7 @@
         <div style="width: 50px; height: 50px; background: var(--primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; box-shadow: 0 10px 20px rgba(195, 245, 60, 0.2);">
             <i data-feather="cloud" style="color: #0f172a; width: 28px; height: 28px;"></i>
         </div>
-        <h2>Ryal FitHub (by Abis Rizvi)<span style="color:var(--primary);">Cloud</span></h2>
+        <h2>Ryal FitHub <span style="color:var(--primary);">Cloud</span></h2>
         <p>The clinical OS for elite personal trainers. Sign in to sync your roster securely.</p>
         
         <button class="btn-main" onclick="ryalSignIn()" style="font-size: 15px; padding: 14px; width: 100%; display: flex; align-items: center; justify-content: center;">
@@ -328,7 +328,7 @@
 
     <div class="section" id="sec-exp" style="animation-delay: 0.25s;">
         <h2 onclick="toggleSec('sec-exp')">
-            <span style="display:flex; align-items:center;"><i data-feather="credit-card" class="icon" style="color:var(--danger); margin-right:8px;"></i> Monthly Expenses</span>
+            <span style="display:flex; align-items:center;"><i data-feather="credit-card" class="icon" style="color:var(--danger); margin-right:8px;"></i> Business Expenses</span>
             <i data-feather="chevron-down" class="chevron"></i>
         </h2>
         <div class="collapsible">
@@ -337,10 +337,10 @@
                 <div style="flex:1;">
                     <label>Category</label>
                     <select id="expCat">
-                        <option value="Gym Rent"> Rent</option>
+                        <option value="Gym Rent">Gym Rent</option>
                         <option value="Supplements">Supplements</option>
-                        <option value="Marketing">Misc Expenses</option>
-                        <option value="Software">Needs</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Software">Software</option>
                         <option value="Other">Other</option>
                     </select>
                 </div>
@@ -409,7 +409,7 @@
     </div>
     
     <footer class="app-footer">
-        <i data-feather="cloud" style="width:14px; color:var(--primary);"></i> Cloud Synced &nbsp;&bull;&nbsp; Ryal FitHub Pro Engine • <br> (by Abis Rizvi)
+        <i data-feather="cloud" style="width:14px; color:var(--primary);"></i> Cloud Synced &nbsp;&bull;&nbsp; Ryal FitHub Pro (by Abis Rizvi)
     </footer>
 </div>
 
@@ -434,8 +434,18 @@
         <div style="margin-top:12px; background:var(--bg); padding:14px; border-radius:12px; border:1px solid var(--border);"><label>Lifestyle Activity (For TDEE)</label><select id="inActivity" style="margin-bottom:0;"><option value="1.2">Sedentary (Desk Job)</option><option value="1.375">Lightly Active (1-3 days/wk)</option><option value="1.55">Moderately Active (3-5 days/wk)</option><option value="1.725">Very Active (Heavy training)</option></select></div>
         <div style="display:flex; gap:12px; margin-top:15px;"><button class="btn-info" onclick="saveBca()" style="flex:1;"><i data-feather="database" class="icon"></i> Log Data</button><button class="btn-main" onclick="generateSmartPlan()" style="flex:1;"><i data-feather="cpu" class="icon"></i> AI Plan & Macros</button></div>
         <div id="bcaHistory" class="history-pane" style="margin-top:20px; max-height:180px; overflow-y:auto; display:none; padding:5px;"></div>
-        <div id="mealBuilderUI" style="display:none; margin-top:25px; border-top: 1px dashed var(--border); padding-top: 20px;"></div>
+        
+        <div style="margin-top:25px; border-top: 1px dashed var(--border); padding-top: 20px;">
+            <div id="mealStatsArea"></div>
+            <div id="mealListArea"></div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                <div style="display:flex; gap:8px;"><input type="text" id="mbName" placeholder="Food item..." style="flex:2; margin:0;"><input type="number" id="mbQty" placeholder="Amt" style="flex:1; margin:0;" value="100"><select id="mbUnit" style="flex:1; margin:0; background:var(--card);"><option value="g">Grams</option><option value="qty">Quantity</option></select><button id="btnFetchMacro" class="btn-info" style="flex:1; padding:12px; margin:0; border-radius:12px;" onclick="fetchMacros()"><i data-feather="download-cloud" class="icon" style="margin:0;"></i></button></div>
+                <div style="display:flex; gap:8px;"><input type="number" id="mbP" placeholder="Pro (g)" style="flex:1; margin:0;"><input type="number" id="mbC" placeholder="Carb (g)" style="flex:1; margin:0;"><input type="number" id="mbF" placeholder="Fat (g)" style="flex:1; margin:0;"></div>
+                <button class="btn-main" style="width:100%; margin-top:5px;" onclick="addMeal()"><i data-feather="plus-circle" class="icon"></i> Add Food to Plan</button>
+            </div>
+        </div>
     </div>
+    
     <div class="section active" id="scoutEngine" style="display:none; border-left:4px solid var(--primary);"><h4 style="margin:0 0 12px 0; font-size:12px; color:var(--text); text-transform:uppercase; display:flex; align-items:center; font-weight:800;"><i data-feather="check-circle" class="icon" style="color:var(--primary);"></i> Clinical Protocol</h4><div id="ovScout"></div></div>
     
     <div class="section active"><h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="bar-chart-2" class="icon" style="color:var(--info); margin-right:8px;"></i> Volume Analytics</span></h2><div style="padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:12px; margin-top:15px;"><canvas id="tonnageChart" height="150"></canvas></div></div>
@@ -445,9 +455,10 @@
         <div style="margin-top:15px;">
             <div style="display:flex; gap:10px; margin-bottom:15px;">
                 <div style="flex:2; position:relative;">
-                    <input type="date" id="gallerySearchDate" style="margin:0; width:100%;" onchange="searchGalleryByDate(this.value)">
+                    <label style="position:absolute; top:-8px; left:10px; background:var(--card); padding:0 5px; font-size:9px; color:var(--info); z-index:5;">Search by Date</label>
+                    <input type="date" id="gallerySearchDate" style="margin:0; width:100%; height:100%;" onchange="searchGalleryByDate(this.value)">
                 </div>
-                <button class="btn-info" style="margin:0; flex:1; padding:10px;" onclick="startSlideshow(0)"><i data-feather="play" class="icon" style="margin:0;"></i> Play</button>
+                <button class="btn-info" style="margin:0; flex:1; padding:10px;" onclick="startSlideshow()"><i data-feather="play" class="icon" style="margin:0;"></i> Play Auto</button>
             </div>
             <div style="position:relative; width:100%; margin-bottom:15px;">
                 <input type="file" id="galleryUpload" accept="image/*" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer; z-index:10;" onchange="uploadToGallery(event)">
@@ -480,11 +491,8 @@
 <div id="slideshowModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:60000; align-items:center; justify-content:center; flex-direction:column; backdrop-filter: blur(5px);">
     <button onclick="closeSlideshow()" style="position:absolute; top:20px; right:20px; background:transparent; color:white; border:none; padding:10px; cursor:pointer;"><i data-feather="x" style="width:30px; height:30px;"></i></button>
     <div id="slideDate" style="color:var(--primary); font-size:18px; font-weight:800; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;"></div>
-    <img id="slideImg" src="" style="max-width:90%; max-height:65vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
-    <div style="display:flex; gap:20px; margin-top:25px;">
-        <button onclick="prevSlide()" class="btn-sub" style="width:auto; padding:12px 25px; border-radius:30px; border-color:var(--text-muted);"><i data-feather="chevron-left" class="icon"></i> Prev</button>
-        <button onclick="nextSlide()" class="btn-sub" style="width:auto; padding:12px 25px; border-radius:30px; border-color:var(--text-muted);">Next <i data-feather="chevron-right" class="icon" style="margin-left:5px; margin-right:0;"></i></button>
-    </div>
+    <img id="slideImg" src="" style="max-width:90%; max-height:65vh; border-radius:12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transition: opacity 0.5s;">
+    <div style="margin-top:20px; color:var(--text-muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:2px;"><i data-feather="loader" style="width:12px; animation:spin 2s linear infinite;"></i> Auto-Playing...</div>
 </div>
 
 <div id="vipPortal">
@@ -513,7 +521,7 @@
         <h3 style="font-size:14px; color:var(--text); margin:0 0 15px 0; display:flex; align-items:center; font-weight:800;"><i data-feather="trending-up" style="color:var(--info); margin-right:8px;"></i> Composition Trend</h3>
         <canvas id="vipChart" height="150"></canvas>
     </div>
-    <div style="text-align:center; font-size:11px; color:var(--text-muted); font-weight:800; padding:20px; letter-spacing:1px;">POWERED BY RYAL FITHUB</div>
+    <div style="text-align:center; font-size:11px; color:var(--text-muted); font-weight:800; padding:20px; letter-spacing:1px;">POWERED BY RYAL FITHUB PRO (BY ABIS RIZVI)</div>
 </div>
 
 <script type="module">
@@ -556,11 +564,13 @@
     window.tonnageChartInst = null;
     window.audioCtx = null;
     window.timerInt = null;
-    window.currentSlideIdx = 0; // Global for Slideshow
+    window.slideInterval = null;
+    window.currentSlideIdx = 0;
 
     if (window.feather) { window.feather.replace(); }
     if(localStorage.getItem('ryal_theme_v9') === 'light') document.body.classList.remove('dark-mode');
     
+    // Failsafe Timeout
     setTimeout(() => {
         const loader = document.getElementById('cloudLoader');
         if (loader && loader.style.display !== 'none') {
@@ -963,10 +973,10 @@
         let cleanPhone = c.phone ? c.phone.replace(/[^0-9]/g, '') : ''; let link = (cleanPhone && cleanPhone.length >= 10) ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`; window.open(link);
     };
 
-    // --- GALLERY TIMELINE & SLIDESHOW LOGIC ---
+    // --- GALLERY TIMELINE & AUTO SLIDESHOW LOGIC ---
     window.uploadToGallery = (event) => {
         const file = event.target.files[0]; if(!file) return; const reader = new FileReader();
-        reader.onload = function(e) { const img = new Image(); img.onload = async function() { const canvas = document.createElement('canvas'); const scaleSize = 300 / img.width; canvas.width = 300; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); const c = window.clients.find(x => x.id === window.curID); if(!c.gallery) c.gallery = []; c.gallery.push({ id: Date.now(), date: window.today, img: canvas.toDataURL('image/jpeg', 0.6) }); c.gallery.sort((a,b) => new Date(b.date) - new Date(a.date)); await window.syncToCloud(); window.renderGallery(); }; img.src = e.target.result; }; reader.readAsDataURL(file);
+        reader.onload = function(e) { const img = new Image(); img.onload = async function() { const canvas = document.createElement('canvas'); const scaleSize = 300 / img.width; canvas.width = 300; canvas.height = img.height * scaleSize; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); const c = window.clients.find(x => x.id === window.curID); if(!c.gallery) c.gallery = []; c.gallery.push({ id: Date.now(), date: document.getElementById('gallerySearchDate').value || window.today, img: canvas.toDataURL('image/jpeg', 0.6) }); c.gallery.sort((a,b) => new Date(b.date) - new Date(a.date)); await window.syncToCloud(); window.renderGallery(); }; img.src = e.target.result; }; reader.readAsDataURL(file);
     };
 
     window.renderGallery = () => {
@@ -984,24 +994,36 @@
     window.startSlideshow = (idx) => {
         const c = window.clients.find(x => x.id === window.curID);
         if(!c.gallery || c.gallery.length === 0) { window.showAlert("No photos to display."); return; }
-        window.currentSlideIdx = idx;
+        
+        // Start from oldest if clicking "Play Auto", or from specific clicked image
+        window.currentSlideIdx = (idx !== undefined) ? idx : (c.gallery.length - 1); 
+        
         document.getElementById('slideshowModal').style.display = 'flex';
         window.updateSlide();
+        
+        clearInterval(window.slideInterval);
+        window.slideInterval = setInterval(() => { window.nextSlide(); }, 2500); // 2.5s per slide
     };
 
     window.updateSlide = () => {
         const c = window.clients.find(x => x.id === window.curID);
-        if(window.currentSlideIdx < 0) window.currentSlideIdx = c.gallery.length - 1;
-        if(window.currentSlideIdx >= c.gallery.length) window.currentSlideIdx = 0;
         const photo = c.gallery[window.currentSlideIdx];
         document.getElementById('slideImg').src = photo.img;
         document.getElementById('slideDate').innerText = photo.date;
         feather.replace();
     };
 
-    window.nextSlide = () => { window.currentSlideIdx--; window.updateSlide(); }; // Going back in index goes forward in time since array is reversed
-    window.prevSlide = () => { window.currentSlideIdx++; window.updateSlide(); };
-    window.closeSlideshow = () => { document.getElementById('slideshowModal').style.display = 'none'; };
+    window.nextSlide = () => { 
+        const c = window.clients.find(x => x.id === window.curID);
+        window.currentSlideIdx--; // Going backwards in array goes forwards in time (since array is reverse sorted)
+        if(window.currentSlideIdx < 0) { window.currentSlideIdx = c.gallery.length - 1; } // Loop back to start
+        window.updateSlide(); 
+    };
+    
+    window.closeSlideshow = () => { 
+        clearInterval(window.slideInterval); 
+        document.getElementById('slideshowModal').style.display = 'none'; 
+    };
 
     window.searchGalleryByDate = (date) => {
         if(!date) return;
@@ -1011,7 +1033,7 @@
         if(idx !== -1) {
             window.startSlideshow(idx);
         } else {
-            window.showAlert("No photo found for " + date + ".");
+            window.showAlert("No photo found for " + date + ". Uploading will attach to this date.");
         }
     };
     // --- END GALLERY LOGIC ---
@@ -1056,8 +1078,8 @@
     window.fetchMacros = async () => {
         let food = document.getElementById('mbName').value; let amt = parseFloat(document.getElementById('mbQty').value) || 100; let unit = document.getElementById('mbUnit').value;
         if(!food) { window.showAlert("Enter a food name first to fetch its macros!"); return; }
-        let btn = document.querySelector('button[onclick="fetchMacros()"]'); let oldHtml = btn.innerHTML;
-        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i> Fetching`; feather.replace();
+        let btn = document.getElementById('btnFetchMacro'); let oldHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i>`; feather.replace();
         try {
             let url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&pageSize=1`;
             let res = await fetch(url); let data = await res.json();
@@ -1072,18 +1094,25 @@
     };
 
     window.renderMealBuilder = () => {
-        const c = window.clients.find(x => x.id === window.curID); const ui = document.getElementById('mealBuilderUI');
-        if(!c.tdee || !c.macros) { ui.style.display = 'none'; return; }
-        let totalP=0, totalC=0, totalF=0, totalCal=0; (c.meals || []).forEach(m => { totalP+=parseFloat(m.p); totalC+=parseFloat(m.c); totalF+=parseFloat(m.f); totalCal+=(m.p*4 + m.c*4 + m.f*9); });
+        const c = window.clients.find(x => x.id === window.curID); 
+        const statsArea = document.getElementById('mealStatsArea');
+        const listArea = document.getElementById('mealListArea');
+        
+        if(!c.tdee || !c.macros) { statsArea.innerHTML = ''; listArea.innerHTML = ''; return; }
+        
+        let totalP=0, totalC=0, totalF=0, totalCal=0; 
+        (c.meals || []).forEach(m => { totalP+=parseFloat(m.p); totalC+=parseFloat(m.c); totalF+=parseFloat(m.f); totalCal+=(m.p*4 + m.c*4 + m.f*9); });
+        
         let remCal = c.tdee - totalCal; let remP = c.macros.p - totalP; let remC = c.macros.c - totalC; let remF = c.macros.f - totalF;
+        
+        statsArea.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>`;
         
         let mealHtml = "";
         (c.meals || []).forEach(m => {
             mealHtml += `<div class="history-row bg-override" style="background:var(--card); padding:12px 15px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; transition:transform 0.2s;"><div style="flex:1;"><b style="font-size:13px; color:var(--text);">${m.name}</b><div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">P:${m.p}g &nbsp;|&nbsp; C:${m.c}g &nbsp;|&nbsp; F:${m.f}g &nbsp;&bull;&nbsp; <b style="color:var(--text);">${Math.round(m.p*4 + m.c*4 + m.f*9)} kcal</b></div></div><button class="btn-action danger" onclick="delMeal(${m.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div>`;
         });
-        
-        ui.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>${mealHtml}`;
-        ui.style.display = 'block'; feather.replace();
+        listArea.innerHTML = mealHtml;
+        if(window.feather) window.feather.replace();
     };
 
     window.addMeal = async () => { const c = window.clients.find(x => x.id === window.curID); let n = document.getElementById('mbName').value; let p = parseFloat(document.getElementById('mbP').value)||0; let carb = parseFloat(document.getElementById('mbC').value)||0; let f = parseFloat(document.getElementById('mbF').value)||0; if(!n) { window.showAlert("Enter a food name"); return; } if(!c.meals) c.meals = []; c.meals.push({ id: Date.now(), name: n, p:p, c:carb, f:f }); await window.syncToCloud(); window.renderMealBuilder(); };
@@ -1193,7 +1222,7 @@
         let printWindow = window.open('', '_blank');
         
         let htmlString = '<!DOCTYPE html><html><head><title>Report - ' + mStr + '</title><style>body{font-family:sans-serif;padding:40px;color:#0f172a;font-size:13px;background:#fff;}h1{margin:0;font-size:26px;text-transform:uppercase;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #cbd5e1;padding:12px 10px;text-align:left;}th{background:#f8fafc;font-weight:800;text-transform:uppercase;font-size:10px;color:#475569;}</style></head><body>';
-        htmlString += '<div style="border-bottom:2px solid #0f172a;padding-bottom:15px;margin-bottom:30px;text-align:center;"><h1>RYAL FITHUB PRO REPORT</h1><p style="margin-top:5px;font-weight:700;">Month: ' + mStr + ' | Trainer: ' + window.trainerProfile.name + '</p></div>';
+        htmlString += '<div style="border-bottom:2px solid #0f172a;padding-bottom:15px;margin-bottom:30px;text-align:center;"><h1>RYAL FITHUB PRO REPORT (BY ABIS RIZVI)</h1><p style="margin-top:5px;font-weight:700;">Month: ' + mStr + ' | Trainer: ' + window.trainerProfile.name + '</p></div>';
         htmlString += '<h2>1. Personal Training (PT) Revenue</h2><table><thead><tr><th>Sr.</th><th>Name</th><th>Receipt</th><th>Pkg ₹</th><th>Start</th><th>End</th><th>Sess.</th><th style="background:#3b82f6;color:white;">Done</th><th>Rem</th><th>Cut/Sess</th><th style="background:#3b82f6;color:white;">Earned</th></tr></thead><tbody>' + clientRowsHtml + '</tbody></table>';
         htmlString += '<div style="text-align:right;font-weight:800;font-size:18px;margin-bottom:30px;">Total PT Revenue: <span style="color:#3b82f6;">₹' + totalPtEarnedThisMonth.toFixed(2) + '</span></div>';
         htmlString += '<h2>2. Salary & Attendance</h2><table><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th>Amount</th></tr></thead><tbody>' + shiftRowsHtml + '</tbody></table>';
@@ -1227,7 +1256,7 @@
         htmlString += '<style>body{font-family:sans-serif;padding:40px;background:#fff;color:#0f172a;} h1{font-size:32px;text-transform:uppercase;border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:5px;} .meta{font-size:13px;font-weight:700;color:#475569;margin-bottom:30px;display:flex;gap:15px;justify-content:center;} .grid{display:flex;gap:20px;margin-bottom:30px} .box{flex:1;padding:25px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:16px} h3{margin-top:0;font-size:14px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #cbd5e1;padding-bottom:10px;margin-bottom:18px} .row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:600} .val{font-weight:800}</style>';
         htmlString += '<scr' + 'ipt src="https://cdn.jsdelivr.net/npm/chart.js"></scr' + 'ipt>';
         htmlString += '</head><body>';
-        htmlString += '<div style="text-align:center;"><h1>' + c.name + '</h1><div class="meta"><span>START: ' + (c.startDate || 'N/A') + '</span></div></div>';
+        htmlString += '<div style="text-align:center;"><h1>' + c.name + ' (BY ABIS RIZVI)</h1><div class="meta"><span>START: ' + (c.startDate || 'N/A') + '</span></div></div>';
         
         htmlString += '<div class="grid"><div class="box"><h3>Before (' + oldest.date + ')</h3>';
         htmlString += '<div class="row"><span>Weight</span><span class="val">' + (oldest.w || '-') + ' kg</span></div>';
