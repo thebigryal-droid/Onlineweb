@@ -439,11 +439,20 @@
             <div id="mealStatsArea"></div>
             <div id="mealListArea"></div>
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                <select id="mbCat" style="margin:0; width:100%;">
+                    <option value="Meal 1 (Breakfast)">Meal 1 (Breakfast)</option>
+                    <option value="Meal 2 (Mid-Morning)">Meal 2 (Mid-Morning)</option>
+                    <option value="Meal 3 (Lunch)">Meal 3 (Lunch)</option>
+                    <option value="Meal 4 (Snacks)">Meal 4 (Snacks)</option>
+                    <option value="Meal 5 (Dinner)">Meal 5 (Dinner)</option>
+                    <option value="Meal 6 (Late Snack)">Meal 6 (Late Snack)</option>
+                </select>
                 <div style="display:flex; gap:8px;"><input type="text" id="mbName" placeholder="Food item..." style="flex:2; margin:0;"><input type="number" id="mbQty" placeholder="Amt" style="flex:1; margin:0;" value="100"><select id="mbUnit" style="flex:1; margin:0; background:var(--card);"><option value="g">Grams</option><option value="qty">Quantity</option></select><button id="btnFetchMacro" class="btn-info" style="flex:1; padding:12px; margin:0; border-radius:12px;" onclick="fetchMacros()"><i data-feather="download-cloud" class="icon" style="margin:0;"></i></button></div>
                 <div style="display:flex; gap:8px;"><input type="number" id="mbP" placeholder="Pro (g)" style="flex:1; margin:0;"><input type="number" id="mbC" placeholder="Carb (g)" style="flex:1; margin:0;"><input type="number" id="mbF" placeholder="Fat (g)" style="flex:1; margin:0;"></div>
                 <button class="btn-main" style="width:100%; margin-top:5px;" onclick="addMeal()"><i data-feather="plus-circle" class="icon"></i> Add Food to Plan</button>
             </div>
         </div>
+
     </div>
     
     <div class="section active" id="scoutEngine" style="display:none; border-left:4px solid var(--primary);"><h4 style="margin:0 0 12px 0; font-size:12px; color:var(--text); text-transform:uppercase; display:flex; align-items:center; font-weight:800;"><i data-feather="check-circle" class="icon" style="color:var(--primary);"></i> Clinical Protocol</h4><div id="ovScout"></div></div>
@@ -1107,16 +1116,42 @@
         
         statsArea.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>`;
         
+        // Group meals by category
+        const cats = ["Meal 1 (Breakfast)", "Meal 2 (Mid-Morning)", "Meal 3 (Lunch)", "Meal 4 (Snacks)", "Meal 5 (Dinner)", "Meal 6 (Late Snack)", "Other"];
+        let grouped = {};
+        (c.meals || []).forEach(m => { let cat = m.cat || "Other"; if(!grouped[cat]) grouped[cat] = []; grouped[cat].push(m); });
+
         let mealHtml = "";
-        (c.meals || []).forEach(m => {
-            mealHtml += `<div class="history-row bg-override" style="background:var(--card); padding:12px 15px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; transition:transform 0.2s;"><div style="flex:1;"><b style="font-size:13px; color:var(--text);">${m.name}</b><div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">P:${m.p}g &nbsp;|&nbsp; C:${m.c}g &nbsp;|&nbsp; F:${m.f}g &nbsp;&bull;&nbsp; <b style="color:var(--text);">${Math.round(m.p*4 + m.c*4 + m.f*9)} kcal</b></div></div><button class="btn-action danger" onclick="delMeal(${m.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div>`;
+        cats.forEach(cat => {
+            if(grouped[cat] && grouped[cat].length > 0) {
+                mealHtml += `<div style="font-size:11px; font-weight:800; color:var(--primary); margin:18px 0 8px 0; text-transform:uppercase;">${cat}</div>`;
+                grouped[cat].forEach(m => {
+                    mealHtml += `<div class="history-row bg-override" style="background:var(--card); padding:12px 15px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; transition:transform 0.2s;"><div style="flex:1;"><b style="font-size:13px; color:var(--text);">${m.name}</b><div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">P:${m.p}g &nbsp;|&nbsp; C:${m.c}g &nbsp;|&nbsp; F:${m.f}g &nbsp;&bull;&nbsp; <b style="color:var(--text);">${Math.round(m.p*4 + m.c*4 + m.f*9)} kcal</b></div></div><button class="btn-action danger" onclick="delMeal(${m.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div>`;
+                });
+            }
         });
+        
         listArea.innerHTML = mealHtml;
         if(window.feather) window.feather.replace();
     };
 
-    window.addMeal = async () => { const c = window.clients.find(x => x.id === window.curID); let n = document.getElementById('mbName').value; let p = parseFloat(document.getElementById('mbP').value)||0; let carb = parseFloat(document.getElementById('mbC').value)||0; let f = parseFloat(document.getElementById('mbF').value)||0; if(!n) { window.showAlert("Enter a food name"); return; } if(!c.meals) c.meals = []; c.meals.push({ id: Date.now(), name: n, p:p, c:carb, f:f }); await window.syncToCloud(); window.renderMealBuilder(); };
-    window.delMeal = async (id) => { const c = window.clients.find(x => x.id === window.curID); c.meals = c.meals.filter(m => m.id !== id); await window.syncToCloud(); window.renderMealBuilder(); };
+    window.addMeal = async () => { 
+        const c = window.clients.find(x => x.id === window.curID); 
+        let n = document.getElementById('mbName').value; 
+        let cat = document.getElementById('mbCat').value; 
+        let p = parseFloat(document.getElementById('mbP').value)||0; 
+        let carb = parseFloat(document.getElementById('mbC').value)||0; 
+        let f = parseFloat(document.getElementById('mbF').value)||0; 
+        
+        if(!n) { window.showAlert("Enter a food name"); return; } 
+        if(!c.meals) c.meals = []; 
+        c.meals.push({ id: Date.now(), name: n, cat: cat, p: p, c: carb, f: f }); 
+        
+        await window.syncToCloud(); 
+        document.getElementById('mbName').value = ""; // clear input
+        window.renderMealBuilder(); 
+    };
+
 
     window.loadSplit = (splitName) => {
         const cont = document.getElementById('exTagsContainer'); document.getElementById('setForm').style.display = 'none'; if(!splitName) { cont.innerHTML = ""; return; }
