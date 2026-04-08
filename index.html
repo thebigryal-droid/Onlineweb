@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <link rel="apple-touch-icon" href="icon.png">
     <style>
         :root { 
             --primary: #c3f53c; 
@@ -37,15 +40,30 @@
         #cloudLoader { position: fixed; inset: 0; background: var(--bg); z-index: 50000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text); font-weight: 800; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; transition: opacity 0.4s; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
 
-        #appContainer { padding: 20px 15px 80px; display: none; animation: fadeIn 0.5s ease-out forwards; }
-
-        header { text-align: center; margin-bottom: 25px; padding-top: 10px; }
-        header h1 { font-size: 26px; font-weight: 800; color: var(--text); margin: 0; letter-spacing: -0.5px; }
-        .trainer-badge { display: inline-block; background: rgba(195, 245, 60, 0.2); color: var(--primary-dark); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; border: 1px solid rgba(195, 245, 60, 0.3); }
+        /* Menu Styles */
+        #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 59999; display: none; opacity: 0; transition: opacity 0.3s; backdrop-filter: blur(3px); }
+        #menuOverlay.open { display: block; opacity: 1; }
+        #sideMenu { position: fixed; top: 0; bottom: 0; left: -280px; width: 260px; height: 100%; background: var(--card); z-index: 60000; box-shadow: 4px 0 20px rgba(0,0,0,0.3); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        #sideMenu.open { left: 0; }
+        .menu-header { padding: 30px 20px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .menu-header h3 { margin: 0; font-size: 18px; color: var(--text); font-weight: 800; letter-spacing: -0.5px; }
+        .trainer-badge { display: inline-block; background: rgba(195, 245, 60, 0.2); color: var(--primary-dark); padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; border: 1px solid rgba(195, 245, 60, 0.3); }
         body.dark-mode .trainer-badge { color: var(--primary); }
+        .menu-links { padding: 15px 0; flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .menu-links a { display: flex; align-items: center; padding: 14px 20px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .menu-links a:hover { background: var(--bg); color: var(--primary); }
+        .menu-links a i { margin-right: 15px; color: var(--text-muted); width: 18px; }
+        .menu-footer { padding: 20px; border-top: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+
+
+        #appContainer { padding: 0 15px 80px; display: none; animation: fadeIn 0.5s ease-out forwards; }
+
+        header.top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 0 25px; }
+        header.top-bar h1 { font-size: 22px; font-weight: 800; color: var(--text); margin: 0; letter-spacing: -0.5px; }
+        .icon-btn { background: transparent; border: none; color: var(--text); padding: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .icon { width: 14px; height: 14px; vertical-align: middle; margin-right: 5px; margin-top: -2px; }
-        .icon-lg { width: 18px; height: 18px; vertical-align: middle; }
+        .icon-lg { width: 22px; height: 22px; vertical-align: middle; }
 
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
@@ -159,7 +177,7 @@
 
 <script>
     window.onerror = function(message, source, lineno, colno, error) {
-        alert("SYSTEM ERROR: " + message + "\nLine: " + lineno);
+        console.error("System Error:", message, lineno, error);
         const loader = document.getElementById('cloudLoader');
         if(loader) loader.style.display = 'none';
     };
@@ -175,6 +193,30 @@
         <h3 id="modalTitle">Notice</h3>
         <p id="modalText">Message</p>
         <div id="modalBtns" class="modal-btns"></div>
+    </div>
+</div>
+
+<div id="menuOverlay" onclick="closeMenu()"></div>
+<div id="sideMenu">
+    <div class="menu-header">
+        <h3 id="menuTrainerName">Trainer</h3>
+        <span class="trainer-badge">Pro Account</span>
+    </div>
+    <div class="menu-links">
+        <a onclick="showMenuSection('sec-leads')"><i data-feather="users"></i> Trial Pipeline</a>
+        <a onclick="showMenuSection('sec-exp')"><i data-feather="credit-card"></i> Business Expenses</a>
+        <a onclick="showMenuSection('sec-master-routine')"><i data-feather="layers"></i> Routine Builder</a>
+        <a onclick="showMenuSection('sec-library')"><i data-feather="video"></i> Video Library</a>
+        <a onclick="showMenuSection('sec-research')"><i data-feather="book-open"></i> Clinical Research</a>
+        <a onclick="showMenuSection('sec-support')"><i data-feather="life-buoy"></i> Platform Support</a>
+        <div style="height:1px; background:var(--border); margin:15px 20px;"></div>
+        <a onclick="editTrainerProfile()"><i data-feather="settings"></i> Profile Settings</a>
+        <a onclick="exportData()"><i data-feather="download"></i> Backup Data</a>
+        <a onclick="document.getElementById('importFile').click()"><i data-feather="upload"></i> Restore Data</a>
+        <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+    </div>
+    <div class="menu-footer">
+        <button class="btn-danger" style="padding:12px; font-size:13px;" onclick="ryalSignOut()"><i data-feather="log-out" style="width:14px; margin-right:8px;"></i> Logout</button>
     </div>
 </div>
 
@@ -224,23 +266,20 @@
                 <input type="time" id="authOut" value="14:00">
             </div>
         </div>
+        <div class="auth-input-group" style="margin-top:10px;">
+            <label style="color:var(--primary);">Gemini AI API Key (Optional)</label>
+            <input type="password" id="authAiKey" placeholder="Paste your API Key here...">
+        </div>
         
         <button class="btn-main" onclick="saveTrainerProfile()" style="margin-top: 10px; font-size: 15px; padding: 16px;">Launch Workspace <i data-feather="arrow-right" style="margin-left:8px;"></i></button>
     </div>
 </div>
 
 <div id="appContainer">
-    <header>
+    <header class="top-bar">
+        <button class="icon-btn" onclick="toggleMenu()"><i data-feather="menu" class="icon-lg"></i></button>
         <h1>Ryal FitHub</h1>
-        <span class="trainer-badge" id="headerTrainerName">Trainer Portal</span>
-        <div style="margin-top: 18px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-            <button class="btn-sub" onclick="toggleTheme()"><i data-feather="moon" class="icon"></i> Theme</button>
-            <button class="btn-sub" onclick="editTrainerProfile()" style="border-color:var(--info); color:var(--info);"><i data-feather="user" class="icon"></i> Profile</button>
-            <button class="btn-sub" onclick="exportData()"><i data-feather="download" class="icon"></i> Backup</button>
-            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
-            <button class="btn-sub" onclick="document.getElementById('importFile').click()"><i data-feather="upload" class="icon"></i> Restore</button>
-            <button class="btn-sub" onclick="ryalSignOut()" style="border-color:var(--danger); color:var(--danger);"><i data-feather="log-out" class="icon"></i> Logout</button>
-        </div>
+        <button class="icon-btn" onclick="toggleTheme()"><i data-feather="moon" class="icon-lg"></i></button>
     </header>
 
     <div class="stats-grid">
@@ -291,22 +330,7 @@
         </div>
     </div>
 
-    <div class="section" id="sec-leads" style="animation-delay: 0.15s;">
-        <h2 onclick="toggleSec('sec-leads')">
-            <span style="display:flex; align-items:center;"><i data-feather="users" class="icon" style="color:var(--info); margin-right:8px;"></i> Trial Pipeline</span>
-            <i data-feather="chevron-down" class="chevron"></i>
-        </h2>
-        <div class="collapsible">
-            <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <input type="text" id="leadName" placeholder="Lead Name" style="flex:1;">
-                <input type="tel" id="leadContact" placeholder="Contact No." style="flex:1;">
-            </div>
-            <button class="btn-sub" style="width:100%; border-color:var(--info); color:var(--info);" onclick="addLead()"><i data-feather="user-plus" class="icon"></i> Add New Lead</button>
-            <div id="leadsList" style="margin-top:18px;"></div>
-        </div>
-    </div>
-
-    <div class="section" id="sec-att" style="animation-delay: 0.2s;">
+    <div class="section active" id="sec-att" style="animation-delay: 0.15s;">
         <h2 onclick="toggleSec('sec-att')">
             <span style="display:flex; align-items:center;"><i data-feather="check-square" class="icon" style="color:var(--info); margin-right:8px;"></i> My Attendance</span>
             <i data-feather="chevron-down" class="chevron"></i>
@@ -326,35 +350,7 @@
         </div>
     </div>
 
-    <div class="section" id="sec-exp" style="animation-delay: 0.25s;">
-        <h2 onclick="toggleSec('sec-exp')">
-            <span style="display:flex; align-items:center;"><i data-feather="credit-card" class="icon" style="color:var(--danger); margin-right:8px;"></i> Business Expenses</span>
-            <i data-feather="chevron-down" class="chevron"></i>
-        </h2>
-        <div class="collapsible">
-            <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <div style="flex:1;"><label>Date</label><input type="date" id="expDate"></div>
-                <div style="flex:1;">
-                    <label>Category</label>
-                    <select id="expCat">
-                        <option value="Gym Rent">Gym Rent</option>
-                        <option value="Supplements">Supplements</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Software">Software</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-            </div>
-            <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <div style="flex:2;"><label>Description</label><input type="text" id="expDesc" placeholder="e.g. Meta Ads"></div>
-                <div style="flex:1;"><label>Amount ₹</label><input type="number" id="expAmt" placeholder="0"></div>
-            </div>
-            <button class="btn-sub" style="width:100%; border-color:var(--danger); color:var(--danger);" onclick="addExpense()"><i data-feather="minus-circle" class="icon"></i> Log Expense</button>
-            <div id="expList" class="history-pane" style="margin-top:18px; max-height:180px; overflow-y:auto; padding:5px;"></div>
-        </div>
-    </div>
-
-    <div class="section" id="sec-rev" style="animation-delay: 0.3s;">
+    <div class="section active" id="sec-rev" style="animation-delay: 0.2s;">
         <h2 onclick="toggleSec('sec-rev')">
             <span style="display:flex; align-items:center;"><i data-feather="pie-chart" class="icon" style="color:var(--primary); margin-right:8px;"></i> Revenue Breakdown</span>
             <i data-feather="chevron-down" class="chevron"></i>
@@ -371,13 +367,14 @@
         </div>
     </div>
 
-    <div class="section" id="sec-prof" style="animation-delay: 0.35s;">
+    <div class="section active" id="sec-prof" style="animation-delay: 0.25s;">
         <h2 onclick="toggleSec('sec-prof')">
             <span style="display:flex; align-items:center;"><i data-feather="user-check" class="icon" style="color:var(--info); margin-right:8px;"></i> Client Setup</span>
             <i data-feather="chevron-down" class="chevron"></i>
         </h2>
         <div class="collapsible">
             <input type="text" id="regName" placeholder="Full Name">
+            <input type="text" id="regGoal" placeholder="Primary Goal (e.g. Hypertrophy, Fat Loss)" style="margin-bottom:12px;">
             <div style="display:flex; gap:12px;">
                 <div style="flex:1"><label>Receipt No.</label><input type="text" id="regReceipt" placeholder="e.g. REC-102"></div>
                 <div style="flex:1"><label>Contact No.</label><input type="tel" id="regPhone" placeholder="Phone/WhatsApp"></div>
@@ -407,23 +404,154 @@
             <button class="btn-main" onclick="regClient()"><i data-feather="user-plus" class="icon"></i> Create Official Profile</button>
         </div>
     </div>
-    
+
+
+    <div class="section" id="sec-leads" style="display:none;">
+        <h2 onclick="toggleSec('sec-leads')">
+            <span style="display:flex; align-items:center;"><i data-feather="users" class="icon" style="color:var(--info); margin-right:8px;"></i> Trial Pipeline</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <input type="text" id="leadName" placeholder="Lead Name" style="flex:1;">
+                <input type="tel" id="leadContact" placeholder="Contact No." style="flex:1;">
+            </div>
+            <button class="btn-sub" style="width:100%; border-color:var(--info); color:var(--info);" onclick="addLead()"><i data-feather="user-plus" class="icon"></i> Add New Lead</button>
+            <div id="leadsList" style="margin-top:18px;"></div>
+        </div>
+    </div>
+
+    <div class="section" id="sec-exp" style="display:none;">
+        <h2 onclick="toggleSec('sec-exp')">
+            <span style="display:flex; align-items:center;"><i data-feather="credit-card" class="icon" style="color:var(--danger); margin-right:8px;"></i> Business Expenses</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:1;"><label>Date</label><input type="date" id="expDate"></div>
+                <div style="flex:1;">
+                    <label>Category</label>
+                    <select id="expCat">
+                        <option value="Gym Rent">Gym Rent</option>
+                        <option value="Supplements">Supplements</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Software">Software</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:2;"><label>Description</label><input type="text" id="expDesc" placeholder="e.g. Meta Ads"></div>
+                <div style="flex:1;"><label>Amount ₹</label><input type="number" id="expAmt" placeholder="0"></div>
+            </div>
+            <button class="btn-sub" style="width:100%; border-color:var(--danger); color:var(--danger);" onclick="addExpense()"><i data-feather="minus-circle" class="icon"></i> Log Expense</button>
+            <div id="expList" class="history-pane" style="margin-top:18px; max-height:180px; overflow-y:auto; padding:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section" id="sec-master-routine" style="display:none; border-left: 4px solid var(--warning);">
+        <h2 onclick="toggleSec('sec-master-routine')">
+            <span style="display:flex; align-items:center;"><i data-feather="layers" class="icon" style="color:var(--warning); margin-right:8px;"></i> Master Routine Builder</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Create custom workout templates and splits for your platform.</p>
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:1;">
+                    <label>Select or Create Split</label>
+                    <input type="text" id="newSplitName" placeholder="e.g. Upper Body Power" list="existingSplits">
+                    <datalist id="existingSplits"></datalist>
+                </div>
+            </div>
+            <div style="display:flex; gap:12px; margin-bottom:15px;">
+                <div style="flex:2;"><label>Exercise to Add</label><input type="text" id="newSplitEx" placeholder="e.g. Incline Dumbbell Press"></div>
+                <button class="btn-main" style="flex:1; margin-top:20px; padding:10px;" onclick="addExerciseToSplit()"><i data-feather="plus" class="icon"></i> Add</button>
+            </div>
+            <div id="splitManagerList" class="history-pane" style="max-height:250px; overflow-y:auto; padding:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section" id="sec-library" style="display:none;">
+        <h2 onclick="toggleSec('sec-library')">
+            <span style="display:flex; align-items:center;"><i data-feather="video" class="icon" style="color:var(--primary); margin-right:8px;"></i> Video Library</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Save tutorial links here. These will be sent to your clients' VIP Portal when you assign them workouts.</p>
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:2;"><label>Exercise Name</label><input type="text" id="libExName" placeholder="e.g. Barbell Squat"></div>
+                <div style="flex:1;"><label>Target Muscle</label><input type="text" id="libExMuscle" placeholder="e.g. Legs"></div>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label>YouTube Link (Unlisted)</label>
+                <input type="url" id="libExVideo" placeholder="https://youtu.be/...">
+            </div>
+            <button class="btn-main" onclick="addLibraryVideo()"><i data-feather="save" class="icon"></i> Save to Database</button>
+            <div id="libraryList" class="history-pane" style="margin-top:18px; max-height:220px; overflow-y:auto; padding:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section" id="sec-research" style="display:none;">
+        <h2 onclick="toggleSec('sec-research')">
+            <span style="display:flex; align-items:center;"><i data-feather="book-open" class="icon" style="color:var(--info); margin-right:8px;"></i> Clinical Research</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Publish nutrition guides, biomechanics breakdowns, and mindset articles for your clients.</p>
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <div style="flex:2;"><label>Article Title</label><input type="text" id="resTitle" placeholder="e.g. Why Visceral Fat Matters"></div>
+                <div style="flex:1;">
+                    <label>Category</label>
+                    <select id="resCat">
+                        <option value="Nutrition">Nutrition</option>
+                        <option value="Biomechanics">Biomechanics</option>
+                        <option value="Mindset">Mindset</option>
+                        <option value="Protocol">Protocol</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label>Content</label>
+                <textarea id="resContent" rows="5" placeholder="Write your educational content here..." style="resize:vertical; line-height:1.5;"></textarea>
+            </div>
+            <button class="btn-main" onclick="addResearchArticle()"><i data-feather="send" class="icon"></i> Publish to VIP Portals</button>
+            <div id="researchList" class="history-pane" style="margin-top:18px; max-height:220px; overflow-y:auto; padding:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section" id="sec-support" style="display:none; border-left: 4px solid var(--info);">
+        <h2 onclick="toggleSec('sec-support')">
+            <span style="display:flex; align-items:center;"><i data-feather="life-buoy" class="icon" style="color:var(--info); margin-right:8px;"></i> Platform Support</span>
+            <i data-feather="chevron-down" class="chevron"></i>
+        </h2>
+        <div class="collapsible" style="display:block;">
+            <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Need help or want to request a feature? Contact the Master Admin.</p>
+            <input type="text" id="supportSubject" placeholder="Subject">
+            <textarea id="supportMsg" rows="4" placeholder="Describe your issue or feature request..."></textarea>
+            <button class="btn-info" onclick="sendSupportTicket()"><i data-feather="send" class="icon"></i> Send Message</button>
+        </div>
+    </div>
+
     <footer class="app-footer">
-        <i data-feather="cloud" style="width:14px; color:var(--primary);"></i> Cloud Synced &nbsp;&bull;&nbsp; Ryal FitHub Pro (by Abis Rizvi)
+        <i data-feather="cloud" style="width:14px; color:var(--primary);"></i> Cloud Synced &nbsp;&bull;&nbsp; Ryal FitHub Pro
     </footer>
 </div>
 
 <div id="clientOverlay">
     <button class="btn-sub" onclick="document.getElementById('clientOverlay').style.display='none'" style="margin-bottom:20px; border-radius:20px;"><i data-feather="arrow-left" class="icon"></i> Dashboard</button>
     <div style="display:flex; gap:12px;"><button class="btn-wa" style="flex:1;" onclick="sendWaReminder()"><i data-feather="bell" class="icon"></i> Reminder</button><button class="btn-pdf" style="flex:1;" onclick="generateProgressPDF()"><i data-feather="file-text" class="icon"></i> Print Report</button></div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0 8px 0;"><h1 id="ovName" style="margin:0; font-size:28px; font-weight:800; letter-spacing:-1px;">Name</h1><div style="position:relative;"><button onclick="document.getElementById('clientMenu').style.display = document.getElementById('clientMenu').style.display === 'block' ? 'none' : 'block'" style="background:none; border:none; color:var(--text); cursor:pointer; padding:5px;"><i data-feather="more-vertical" class="icon-lg"></i></button><div id="clientMenu" style="display:none; position:absolute; right:0; top:40px; background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:0 15px 35px rgba(0,0,0,0.2); padding:10px; z-index:100; min-width:180px; animation: fadeUp 0.2s ease-out;"><button class="btn-sub" style="width:100%; border:none; background:transparent; text-align:left; padding:12px; font-size:14px; margin-bottom:5px; font-weight:700; color:var(--text); cursor:pointer; border-radius:10px;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="showEditForm()"><i data-feather="edit-2" class="icon"></i> Edit Profile</button><button class="btn-sub" style="width:100%; border:none; background:transparent; text-align:left; padding:12px; font-size:14px; margin-bottom:5px; font-weight:700; color:var(--info); cursor:pointer; border-radius:10px;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="generateVIPLink()"><i data-feather="link" class="icon"></i> Copy VIP Link</button><button class="btn-danger" style="width:100%; padding:12px; font-size:14px; font-weight:700; cursor:pointer; border-radius:10px;" onclick="deleteCurrentClient()"><i data-feather="trash-2" class="icon"></i> Delete Client</button></div></div></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin: 20px 0 8px 0;"><h1 id="ovName" style="margin:0; font-size:28px; font-weight:800; letter-spacing:-1px;">Name</h1><div style="position:relative;"><button onclick="document.getElementById('clientMenu').style.display = document.getElementById('clientMenu').style.display === 'block' ? 'none' : 'block'" style="background:none; border:none; color:var(--text); cursor:pointer; padding:5px;"><i data-feather="more-vertical" class="icon-lg"></i></button><div id="clientMenu" style="display:none; position:absolute; right:0; top:40px; background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:0 15px 35px rgba(0,0,0,0.2); padding:10px; z-index:100; min-width:180px; animation: fadeUp 0.2s ease-out;"><button class="btn-sub" style="width:100%; border:none; background:transparent; text-align:left; padding:12px; font-size:14px; margin-bottom:5px; font-weight:700; color:var(--text); cursor:pointer; border-radius:10px;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="showEditForm()"><i data-feather="edit-2" class="icon"></i> Edit Profile</button><button class="btn-sub" style="width:100%; border:none; background:transparent; text-align:left; padding:12px; font-size:14px; margin-bottom:5px; font-weight:700; color:var(--info); cursor:pointer; border-radius:10px;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" onclick="generateVIPLink()"><i data-feather="link" class="icon"></i> Copy Live Link</button><button class="btn-danger" style="width:100%; padding:12px; font-size:14px; font-weight:700; cursor:pointer; border-radius:10px;" onclick="deleteCurrentClient()"><i data-feather="trash-2" class="icon"></i> Delete Client</button></div></div></div>
+    
     <p id="ovTags" style="font-size:13px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:8px; margin-top:0; letter-spacing:0.5px;"></p>
+    <p style="font-size:13px; color:var(--text); font-weight:800; margin-bottom:15px; margin-top:0;">Goal: <span style="color:var(--primary);" id="ovGoalText">None Set</span></p>
     <p id="ovReceipt" style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight:600;"></p>
     <div id="ovMed" style="display:none; background:rgba(239, 68, 68, 0.1); color:var(--danger); padding:14px; border-radius:12px; font-size:13px; font-weight:800; border:1px solid rgba(239, 68, 68, 0.3); margin-bottom:20px; align-items:center;"></div>
 
     <div class="section" id="ovEditForm" style="display:none; border-left: 4px solid var(--info);">
         <h2 style="font-size:12px; color:var(--info); margin-bottom:18px;"><span style="display:flex; align-items:center;"><i data-feather="settings" class="icon" style="margin-right:8px;"></i> Edit Details</span></h2>
-        <input type="text" id="editName" placeholder="Full Name"><div style="display:flex; gap:12px;"><div style="flex:1"><label>Gender</label><select id="editGender"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div><div style="flex:1"><label>Contact No.</label><input type="tel" id="editPhone"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Session Slot</label><input type="time" id="editSlot"></div><div style="flex:1"><label>Age</label><input type="number" id="editAge"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Height (cm)</label><input type="number" step="0.1" id="editHeight"></div><div style="flex:1"><label>Receipt No.</label><input type="text" id="editReceipt"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Total Sessions</label><input type="number" id="editSess"></div><div style="flex:1"><label>End Date</label><input type="date" id="editEnd"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Injuries</label><input type="text" id="editMed"></div></div>
+        <input type="text" id="editName" placeholder="Full Name">
+        <input type="text" id="editGoal" placeholder="Primary Goal (e.g. Hypertrophy, Fat Loss)" style="margin-bottom:12px;">
+        <div style="display:flex; gap:12px;"><div style="flex:1"><label>Gender</label><select id="editGender"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div><div style="flex:1"><label>Contact No.</label><input type="tel" id="editPhone"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Session Slot</label><input type="time" id="editSlot"></div><div style="flex:1"><label>Age</label><input type="number" id="editAge"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Height (cm)</label><input type="number" step="0.1" id="editHeight"></div><div style="flex:1"><label>Receipt No.</label><input type="text" id="editReceipt"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Total Sessions</label><input type="number" id="editSess"></div><div style="flex:1"><label>End Date</label><input type="date" id="editEnd"></div></div><div style="display:flex; gap:12px;"><div style="flex:1"><label>Injuries</label><input type="text" id="editMed"></div></div>
         <div style="display:flex; gap:12px; margin-top:5px;"><button class="btn-info" onclick="saveClientEdit()"><i data-feather="save" class="icon"></i> Save</button><button class="btn-sub" style="flex:0.5;" onclick="document.getElementById('ovEditForm').style.display='none'">Cancel</button></div>
     </div>
 
@@ -456,6 +584,65 @@
     </div>
     
     <div class="section active" id="scoutEngine" style="display:none; border-left:4px solid var(--primary);"><h4 style="margin:0 0 12px 0; font-size:12px; color:var(--text); text-transform:uppercase; display:flex; align-items:center; font-weight:800;"><i data-feather="check-circle" class="icon" style="color:var(--primary);"></i> Clinical Protocol</h4><div id="ovScout"></div></div>
+
+    <div class="section active" style="border-left:4px solid #8b5cf6; background: linear-gradient(145deg, var(--bg), rgba(139, 92, 246, 0.05));">
+        <h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="cpu" class="icon" style="color:#8b5cf6; margin-right:8px;"></i> AI Co-Pilot & Plateau Breaker</span></h2>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">Scans the last 14 days of this client's performance and BCA data to generate a clinical protocol.</p>
+        
+        <button class="btn-main" style="background:#8b5cf6; color:white; border:none; margin-top:10px;" onclick="runPlateauAI()">
+            <i data-feather="zap" class="icon"></i> Analyze Client Data
+        </button>
+        
+        <div id="aiOutputBox" style="display:none; margin-top:15px; padding:15px; background:var(--card); border:1px solid #8b5cf6; border-radius:12px; font-size:13px; line-height:1.6; color:var(--text); box-shadow: 0 10px 25px rgba(139, 92, 246, 0.1);">
+            <div id="aiThinking" style="color:#8b5cf6; font-weight:800; font-size:11px; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center;">
+                <i data-feather="loader" style="width:14px; animation:spin 1s linear infinite; margin-right:8px;"></i> Running Diagnostics...
+            </div>
+            <div id="aiResultText" style="display:none; margin-top:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section active" style="border-left: 4px solid #10b981;">
+        <h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="wind" class="icon" style="color:#10b981; margin-right:8px;"></i> Flexibility & Mobility</span></h2>
+        <div style="margin-top:15px;">
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <div style="flex:1"><label>Date</label><input type="date" id="mobDate"></div>
+                <div style="flex:1">
+                    <label>Target Muscle</label>
+                    <input type="text" id="mobMuscle" placeholder="e.g. Hamstrings" list="mobMuscleList">
+                    <datalist id="mobMuscleList">
+                        <option value="Neck"><option value="Traps"><option value="Shoulders"><option value="Chest"><option value="Thoracic Spine"><option value="Lats"><option value="Lower Back"><option value="Abs"><option value="Hip Flexors"><option value="Glutes"><option value="Quads"><option value="Hamstrings"><option value="Calves"><option value="Ankles"><option value="Wrists">
+                    </datalist>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <div style="flex:2"><label>Exercise / Stretch</label><input type="text" id="mobExercise" placeholder="e.g. Couch Stretch"></div>
+                <div style="flex:1"><label>Secs</label><input type="number" id="mobTime" placeholder="60"></div>
+                <div style="flex:1"><label>Sets</label><input type="number" id="mobSets" placeholder="2"></div>
+            </div>
+            <button class="btn-main" style="background:rgba(16, 185, 129, 0.1); color:#10b981; border:1px solid #10b981;" onclick="saveMobility()"><i data-feather="plus" class="icon"></i> Log Mobility</button>
+            <div id="mobList" class="history-pane" style="margin-top:18px; max-height:180px; overflow-y:auto; display:none; padding:5px;"></div>
+        </div>
+    </div>
+
+    <div class="section active" style="border-left: 4px solid var(--danger);">
+        <h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="heart" class="icon" style="color:var(--danger); margin-right:8px;"></i> Endurance & Cardio</span></h2>
+        <div style="margin-top:15px;">
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <div style="flex:1"><label>Date</label><input type="date" id="cardioDate"></div>
+                <div style="flex:1"><label>Activity</label><select id="cardioType"><option value="Run">Run</option><option value="Treadmill">Treadmill</option><option value="Cycle">Cycle</option><option value="Row">Row</option><option value="Swim">Swim</option></select></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <div style="flex:1"><label>Dist (km)</label><input type="number" step="0.1" id="cardioDist" placeholder="e.g. 5.0"></div>
+                <div style="flex:1"><label>Time (Mins)</label><input type="number" id="cardioTime" placeholder="e.g. 25"></div>
+                <div style="flex:1"><label>Avg HR</label><input type="number" id="cardioHr" placeholder="150"></div>
+            </div>
+            <button class="btn-main" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:1px solid var(--danger);" onclick="saveCardio()"><i data-feather="plus" class="icon"></i> Log Cardio Session</button>
+            <div id="cardioList" class="history-pane" style="margin-top:18px; max-height:180px; overflow-y:auto; display:none; padding:5px;"></div>
+            <div style="padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:12px; margin-top:15px; display:none;" id="cardioChartBox">
+                <canvas id="cardioChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
     
     <div class="section active"><h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="bar-chart-2" class="icon" style="color:var(--info); margin-right:8px;"></i> Volume Analytics</span></h2><div style="padding:15px; background:var(--bg); border:1px solid var(--border); border-radius:12px; margin-top:15px;"><canvas id="tonnageChart" height="150"></canvas></div></div>
     
@@ -480,8 +667,26 @@
     <div class="section active">
         <h2 style="font-size:12px;"><span style="display:flex; align-items:center;"><i data-feather="zap" class="icon" style="color:var(--warning); margin-right:8px;"></i> Record Workout</span></h2>
         <div style="margin-top:15px;">
-            <input type="date" id="logDate"><input type="text" id="logWorkoutName" placeholder="Name Workout (e.g., Push Day)"><select id="splitSelect" onchange="loadSplit(this.value)"><option value="">-- Select Template --</option><option value="Pull (Back & Biceps)">Pull (Back & Biceps)</option><option value="Push (Chest, Shoulders, Triceps)">Push (Chest, Shoulders, Triceps)</option><option value="Legs (Quads, Hams, Glutes)">Legs (Quads, Hams, Glutes)</option><option value="Core & Functional">Core & Functional</option></select><div id="exTagsContainer" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px;"></div>
-            <div style="position:relative;"><i data-feather="search" style="position:absolute; left:14px; top:14px; color:var(--text-muted); width:16px;"></i><input type="text" id="exSearch" placeholder="Search exercise..." oninput="searchEx(this.value)" style="padding-left:40px;"></div><div id="searchRes" style="background:var(--card); border:1px solid var(--border); display:none; max-height:150px; overflow-y:auto; border-radius:12px; margin-bottom:12px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); z-index:20; position:relative;"></div>
+            <input type="date" id="logDate">
+            <input type="text" id="logWorkoutName" placeholder="Name Workout (e.g., Push Day)">
+            
+            <input type="text" id="splitSelect" placeholder="Type Muscle Group (e.g., Chest, Quads)" list="muscleDataList" oninput="loadSplit(this.value)">
+            <datalist id="muscleDataList"></datalist>
+            
+            <div style="display:flex; gap:8px; margin-bottom:15px; border-top:1px dashed var(--border); padding-top:15px; margin-top:5px;">
+                <input type="text" id="aiWorkoutInput" placeholder="AI: Type Muscle/Goal (e.g. Chest)" style="flex:2; margin:0; border-color:#8b5cf6;">
+                <button class="btn-main" id="aiGenerateBtn" style="flex:1; margin:0; padding:10px; background:#8b5cf6; color:white;" onclick="generateAIExercises(false)"><i data-feather="zap" class="icon" style="margin:0;"></i> Get</button>
+                <button class="btn-sub" id="aiRefreshBtn" style="margin:0; padding:10px; width:auto; border-color:#8b5cf6; color:#8b5cf6;" onclick="generateAIExercises(true)"><i data-feather="refresh-cw" class="icon" style="margin:0;"></i></button>
+            </div>
+
+            <div id="exTagsContainer" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px;"></div>
+            
+            <div style="position:relative;">
+                <i data-feather="search" style="position:absolute; left:14px; top:14px; color:var(--text-muted); width:16px;"></i>
+                <input type="text" id="exSearch" placeholder="Search exercise..." oninput="searchEx(this.value)" style="padding-left:40px;">
+            </div>
+            <div id="searchRes" style="background:var(--card); border:1px solid var(--border); display:none; max-height:150px; overflow-y:auto; border-radius:12px; margin-bottom:12px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); z-index:20; position:relative;"></div>
+            
             <div id="setForm" style="display:none; padding:18px; background:var(--bg); border-radius:14px; border:1px solid var(--primary); margin-top:15px;">
                 <b id="curEx" style="font-size:16px; font-weight:800; color:var(--text); display:block; margin-bottom:8px;">Selected</b>
                 <div id="historyRecall" style="background:var(--card); padding:10px 14px; border-radius:10px; margin-bottom:15px; font-size:12px; color:var(--text-muted); display:none; align-items:center; justify-content:space-between; border: 1px solid var(--border);"><span id="historyRecallText" style="font-weight:700;">Last: -</span><div style="display:flex; gap:5px;"><button class="btn-action" onclick="applyProgression('wt')">+2.5% Wt</button><button class="btn-action" onclick="applyProgression('rep')">+1 Rep</button></div></div>
@@ -504,39 +709,65 @@
     <div style="margin-top:20px; color:var(--text-muted); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:2px;"><i data-feather="loader" style="width:12px; animation:spin 2s linear infinite;"></i> Auto-Playing...</div>
 </div>
 
-<div id="vipPortal">
-    <div class="vip-card" style="text-align:center; padding-bottom:10px;">
-        <h1 id="vipName" style="font-size:28px; margin:0; letter-spacing:-1px;"></h1>
-        <div id="vipMeta" style="font-size:12px; color:var(--text-muted); margin-top:5px; font-weight:800; text-transform:uppercase;"></div>
-        <div id="vipTrainerNameSpan" style="font-size:10px; color:var(--primary); font-weight:800; margin-top:8px;"></div>
+<div id="vipPortal" style="display:none; background:var(--bg); color:var(--text); min-height:100vh; padding:40px 20px;">
+    
+    <div id="vipLoginBox" class="auth-card" style="margin-top:10vh; display:none;">
+        <h2>Client Portal</h2>
+        <p style="color:var(--text-muted); font-size:12px;">Enter your unique Client ID provided by your trainer.</p>
+        <input type="text" id="vipIdInput" placeholder="Client ID (e.g. 1712345678)" style="text-align:center; letter-spacing:1px; font-weight:bold; margin-bottom:15px;">
+        <button class="btn-main" onclick="loginVIP()">Access Portal</button>
     </div>
 
-    <div class="vip-card" id="vipRoutineCard" style="display:none;">
-        <h3 style="font-size:14px; color:var(--text); margin:0 0 15px 0; display:flex; align-items:center; font-weight:800;"><i data-feather="play-circle" style="color:#ef4444; margin-right:8px;"></i> Recent Routine Form Guides</h3>
-        <div id="vipRoutineLinks"></div>
-    </div>
-
-    <div class="vip-card">
-        <h3 style="font-size:14px; color:var(--text); margin:0 0 15px 0; display:flex; align-items:center; font-weight:800;"><i data-feather="target" style="color:var(--primary); margin-right:8px;"></i> Nutritional Targets</h3>
-        <div style="display:flex; justify-content:space-between; text-align:center;">
-            <div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">TDEE</div><div id="vipCal" style="font-weight:800; font-size:18px; margin-top:5px; color:var(--text);">-</div></div>
-            <div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div id="vipPro" style="font-weight:800; font-size:18px; margin-top:5px; color:#10b981;">-</div></div>
-            <div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div id="vipCarb" style="font-weight:800; font-size:18px; margin-top:5px; color:#3b82f6;">-</div></div>
-            <div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div id="vipFat" style="font-weight:800; font-size:18px; margin-top:5px; color:#f59e0b;">-</div></div>
+    <div id="vipDashboard" style="display:none; max-width:600px; margin:0 auto;">
+        
+        <div style="text-align:center; margin-bottom:25px; padding-top:20px;">
+            <h1 id="vipLiveName" style="font-size:32px; margin:0; letter-spacing:-1px;"></h1>
+            <div id="vipLiveTrainer" style="font-size:10px; color:var(--primary); font-weight:800; margin-top:5px; letter-spacing:1px;"></div>
         </div>
-    </div>
 
-    <div class="vip-card">
-        <h3 style="font-size:14px; color:var(--text); margin:0 0 15px 0; display:flex; align-items:center; font-weight:800;"><i data-feather="trending-up" style="color:var(--info); margin-right:8px;"></i> Composition Trend</h3>
-        <canvas id="vipChart" height="150"></canvas>
+        <div class="section" style="border-left: 4px solid #8b5cf6;">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="book-open" class="icon" style="color:#8b5cf6;"></i> Clinical Hub</h3>
+            <div id="vipResearchDocs"></div>
+        </div>
+
+        <div class="section" style="border-left: 4px solid var(--warning);">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="calendar" class="icon" style="color:var(--warning);"></i> Upcoming Session</h3>
+            <div id="vipUpcoming"></div>
+        </div>
+
+        <div class="section" style="border-left: 4px solid var(--info);">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="check-circle" class="icon" style="color:var(--info);"></i> Workout History </h3>
+            <div id="vipPrevious"></div>
+        </div>
+        
+        <div class="section" id="vipMobilitySec" style="display:none; border-left: 4px solid #10b981;">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="wind" class="icon" style="color:#10b981;"></i> Mobility & Flexibility</h3>
+            <div id="vipMobilityList"></div>
+        </div>
+
+        <div class="section" id="vipCardioSec" style="display:none; border-left: 4px solid var(--danger);">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="heart" class="icon" style="color:var(--danger);"></i> Endurance Log</h3>
+            <div id="vipCardioList"></div>
+        </div>
+
+        <div class="section" style="border-left: 4px solid var(--primary);">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text); text-transform:uppercase;"><i data-feather="video" class="icon" style="color:var(--primary);"></i> Exercise Library</h3>
+            <input type="text" id="vipSearchLib" placeholder="Search exercises..." oninput="searchVipLibrary(this.value)">
+            <div id="vipLibResults" style="margin-top:10px; max-height:250px; overflow-y:auto;"></div>
+        </div>
+
+        <div class="section" id="vipChartSec" style="display:none;">
+            <h3 style="font-size:12px; margin:0 0 15px 0; color:var(--text);"><i data-feather="trending-up" class="icon"></i> Progress Trend</h3>
+            <canvas id="vipLiveChart" height="150"></canvas>
+        </div>
+        
     </div>
-    <div style="text-align:center; font-size:11px; color:var(--text-muted); font-weight:800; padding:20px; letter-spacing:1px;">POWERED BY RYAL FITHUB PRO (BY ABIS RIZVI)</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBg9h_yMnIc0xLFWsu8AivB_oJHOHTuqvw",
@@ -558,11 +789,24 @@
     window.leads = [];
     window.expenses = [];
     window.plans = [];
+    window.videoLibrary = [];
+    window.researchCenter = [];
+    
+    // MASSIVE COMPREHENSIVE WORKOUT DATABASE
     window.workoutDB = {
-        "Pull (Back & Biceps)": ["Pull-ups", "Lat Pulldown", "Seated Cable Row", "Barbell Row", "Barbell Bicep Curl", "Hammer Curl"],
-        "Push (Chest, Shoulders, Triceps)": ["Bench Press", "Incline DB Press", "Cable Crossover", "Overhead Press", "Lateral Raises", "Triceps Pushdown"],
-        "Legs (Quads, Hams, Glutes)": ["Barbell Squats", "Leg Press", "Leg Extensions", "Romanian Deadlift", "Hamstring Curls"],
-        "Core & Functional": ["Plank", "Russian Twists", "Leg Raises", "Kettlebell Swings"],
+        "Chest": ["Barbell Bench Press", "Incline Dumbbell Press", "Decline Barbell Press", "Cable Crossovers", "Pec Deck Flyes", "Dumbbell Pullover", "Push-ups", "Dips (Chest Focus)"],
+        "Back (Lats & Rhomboids)": ["Pull-ups", "Lat Pulldown", "Seated Cable Row", "Barbell Bent-Over Row", "T-Bar Row", "Single-Arm Dumbbell Row", "Straight-Arm Pulldown", "Meadows Row", "Deadlift"],
+        "Shoulders (Deltoids)": ["Overhead Barbell Press", "Seated Dumbbell Press", "Lateral Raises", "Cable Lateral Raises", "Front Raises", "Reverse Pec Deck", "Face Pulls", "Upright Row"],
+        "Biceps": ["Barbell Curl", "Dumbbell Hammer Curl", "EZ-Bar Preacher Curl", "Incline Dumbbell Curl", "Cable Bicep Curl", "Concentration Curl", "Reverse Curl"],
+        "Triceps": ["Triceps Rope Pushdown", "Overhead Cable Extension", "Skullcrushers", "Close-Grip Bench Press", "Dumbbell Kickbacks", "Weighted Dips"],
+        "Forearms & Wrists": ["Wrist Curls", "Reverse Wrist Curls", "Farmers Walk", "Plate Pinches"],
+        "Quads": ["Barbell Back Squat", "Barbell Front Squat", "Leg Press", "Leg Extensions", "Hack Squat", "Bulgarian Split Squat", "Walking Lunges", "Goblet Squat"],
+        "Hamstrings": ["Romanian Deadlift (RDL)", "Seated Leg Curl", "Lying Leg Curl", "Glute-Ham Raise", "Good Mornings", "Stiff-Legged Deadlift"],
+        "Glutes": ["Barbell Hip Thrust", "Glute Kickbacks", "Cable Pull-Throughs", "Glute Bridges", "Abductor Machine"],
+        "Calves": ["Standing Calf Raise", "Seated Calf Raise", "Leg Press Calf Raise", "Donkey Calf Raise"],
+        "Core & Abs": ["Plank", "Crunch", "Hanging Leg Raises", "Russian Twists", "Cable Crunches", "Ab-Wheel Rollout", "Woodchoppers", "Bicycle Crunches", "Decline Crunches"],
+        "Lower Back": ["Hyperextensions", "Superman", "Bird-Dog"],
+        "Traps": ["Barbell Shrugs", "Dumbbell Shrugs", "Smith Machine Shrugs"],
         "Custom Exercises": [] 
     };
 
@@ -571,15 +815,16 @@
     window.curExName = ""; 
     window.lastPerfData = null;
     window.tonnageChartInst = null;
+    window.cardioChartInst = null;
     window.audioCtx = null;
     window.timerInt = null;
     window.slideInterval = null;
     window.currentSlideIdx = 0;
 
-    if (window.feather) { window.feather.replace(); }
+    // FEATHER ICONS BUG FIX: Run on a tiny delay to ensure DOM is drawn
+    if (window.feather) { setTimeout(() => window.feather.replace(), 10); }
     if(localStorage.getItem('ryal_theme_v9') === 'light') document.body.classList.remove('dark-mode');
     
-    // Failsafe Timeout
     setTimeout(() => {
         const loader = document.getElementById('cloudLoader');
         if (loader && loader.style.display !== 'none') {
@@ -588,54 +833,418 @@
         }
     }, 8000);
 
-    // --- VIP PORTAL DECODING & LOADING ---
-    window.encodeToHash = (obj) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-    window.decodeFromHash = (hash) => JSON.parse(decodeURIComponent(escape(atob(hash))));
-
-    window.loadVipPortal = () => {
-        try {
-            const data = window.decodeFromHash(window.location.hash.replace('#vip=', ''));
-            document.getElementById('vipName').innerText = data.n;
-            document.getElementById('vipMeta').innerText = `${data.g || '-'} | ${data.a ? data.a+' Yrs' : '-'} | ${data.h ? data.h+' cm' : '-'}`;
-            document.getElementById('vipTrainerNameSpan').innerText = `(BY ${data.tName ? data.tName.toUpperCase() : 'YOUR TRAINER'})`;
-            
-            if(data.ex && data.ex.length > 0) {
-                document.getElementById('vipRoutineCard').style.display = 'block';
-                document.getElementById('vipRoutineLinks').innerHTML = data.ex.map(ex => `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex + ' exercise form tutorial')}" target="_blank" style="display:block; padding:14px; background:var(--bg); border:1px solid var(--border); border-radius:12px; margin-bottom:10px; text-decoration:none; color:var(--text); font-weight:700; font-size:14px; display:flex; justify-content:space-between; transition:all 0.2s; box-shadow:0 2px 5px rgba(0,0,0,0.02);"><span style="display:flex; align-items:center;"><i data-feather="youtube" style="color:#ef4444; margin-right:10px; width:18px; height:18px;"></i> ${ex}</span><i data-feather="external-link" style="width:16px; color:var(--text-muted);"></i></a>`).join('');
-            }
-            if(data.tdee && data.macros) {
-                document.getElementById('vipCal').innerText = data.tdee;
-                document.getElementById('vipPro').innerText = data.macros.p + 'g';
-                document.getElementById('vipCarb').innerText = data.macros.c + 'g';
-                document.getElementById('vipFat').innerText = data.macros.f + 'g';
-            }
-            if(data.bca && data.bca.length > 0) {
-                const chartData = [...data.bca].reverse();
-                const ctx = document.getElementById('vipChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: chartData.map(b => b.date),
-                        datasets: [
-                            { label: 'Weight (kg)', data: chartData.map(b => b.w), borderColor: '#94a3b8', tension: 0.4, borderWidth: 3 },
-                            { label: 'Muscle (kg)', data: chartData.map(b => b.smm), borderColor: '#10b981', tension: 0.4, borderWidth: 3 },
-                            { label: 'Fat (%)', data: chartData.map(b => b.pbf), borderColor: '#ef4444', tension: 0.4, borderWidth: 3 }
-                        ]
-                    },
-                    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family: 'SF Pro Display', weight: 'bold' } } } } }
-                });
-            }
-            if (window.feather) window.feather.replace();
-        } catch(e) { window.showAlert("Invalid VIP Link."); }
+    // --- NEW SIDE MENU LOGIC ---
+    window.toggleMenu = () => {
+        const menu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('menuOverlay');
+        if(menu.classList.contains('open')) {
+            menu.classList.remove('open'); 
+            overlay.classList.remove('open');
+            document.body.style.overflow = ''; // Allow scrolling again
+            setTimeout(()=> overlay.style.display = 'none', 300);
+        } else {
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling while open
+            setTimeout(()=> { menu.classList.add('open'); overlay.classList.add('open'); }, 10);
+        }
+    };
+    
+    window.closeMenu = () => {
+        document.getElementById('sideMenu').classList.remove('open');
+        const overlay = document.getElementById('menuOverlay');
+        overlay.classList.remove('open');
+        document.body.style.overflow = ''; // Allow scrolling again
+        setTimeout(()=> overlay.style.display = 'none', 300);
     };
 
-    if (window.location.hash.startsWith('#vip=')) {
+    window.showMenuSection = (secId) => {
+        window.closeMenu();
+        const extras = ['sec-leads', 'sec-exp', 'sec-master-routine', 'sec-library', 'sec-research', 'sec-support'];
+        extras.forEach(id => { document.getElementById(id).style.display = 'none'; });
+        
+        const target = document.getElementById(secId);
+        target.style.display = 'block';
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // --- MASTER ROUTINE BUILDER LOGIC ---
+    window.renderSplitManager = () => {
+        let dl = document.getElementById('existingSplits');
+        let listDiv = document.getElementById('splitManagerList');
+        dl.innerHTML = "";
+        let htmlStr = "";
+        
+        if(!window.workoutDB || Object.keys(window.workoutDB).length === 0) {
+            window.workoutDB = { "General Custom": [] };
+        }
+
+        Object.keys(window.workoutDB).forEach(split => {
+            dl.innerHTML += `<option value="${split}">`;
+            htmlStr += `<div style="margin-bottom:15px; background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border);">
+                <div style="font-weight:800; color:var(--primary); margin-bottom:8px; display:flex; justify-content:space-between;">${split} <button class="btn-action danger" onclick="deleteSplit('${split}')"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div>
+                <div style="display:flex; flex-wrap:wrap; gap:5px;">`;
+            window.workoutDB[split].forEach((ex, idx) => {
+                htmlStr += `<span class="badge" style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:5px 8px; display:flex; align-items:center; gap:5px;">${ex} <i data-feather="x" style="width:10px; cursor:pointer; color:var(--danger);" onclick="removeExFromSplit('${split}', ${idx})"></i></span>`;
+            });
+            htmlStr += `</div></div>`;
+        });
+        
+        listDiv.innerHTML = htmlStr;
+        
+        let mainSelect = document.getElementById('muscleDataList');
+        if(mainSelect) {
+            mainSelect.innerHTML = Object.keys(window.workoutDB).map(s => `<option value="${s}">`).join('');
+        }
+        
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+
+    window.addExerciseToSplit = async () => {
+        let splitName = document.getElementById('newSplitName').value.trim();
+        let exName = document.getElementById('newSplitEx').value.trim();
+        if(!splitName || !exName) { window.showAlert("Enter both Split Name and Exercise"); return; }
+        
+        if(!window.workoutDB) window.workoutDB = {};
+        if(!window.workoutDB[splitName]) window.workoutDB[splitName] = [];
+        
+        if(!window.workoutDB[splitName].includes(exName)) {
+            window.workoutDB[splitName].push(exName);
+            await window.syncToCloud();
+            window.renderSplitManager();
+            document.getElementById('newSplitEx').value = "";
+            window.showAlert(`Added ${exName} to ${splitName}`);
+        } else {
+            window.showAlert("Exercise already exists in this split.");
+        }
+    };
+
+    window.removeExFromSplit = async (split, idx) => {
+        window.workoutDB[split].splice(idx, 1);
+        await window.syncToCloud();
+        window.renderSplitManager();
+    };
+
+    window.deleteSplit = async (split) => {
+        window.showConfirm(`Delete entire split: ${split}?`, async () => {
+            delete window.workoutDB[split];
+            await window.syncToCloud();
+            window.renderSplitManager();
+        });
+    };
+
+    // --- SUPPORT SYSTEM ---
+    window.sendSupportTicket = async () => {
+        let sub = document.getElementById('supportSubject').value;
+        let msg = document.getElementById('supportMsg').value;
+        if(!sub || !msg) { window.showAlert("Please fill out both the subject and message."); return; }
+        
+        try {
+            await addDoc(collection(db, "support_tickets"), {
+                trainerName: window.trainerProfile.name,
+                trainerEmail: window.trainerProfile.email,
+                uid: currentUser.uid,
+                subject: sub,
+                message: msg,
+                date: window.today,
+                timestamp: Date.now()
+            });
+            document.getElementById('supportSubject').value = "";
+            document.getElementById('supportMsg').value = "";
+            window.showAlert("Ticket successfully sent to Master Admin!");
+        } catch(e) {
+            window.showAlert("Error sending ticket: " + e.message);
+        }
+    };
+    
+    // --- VIDEO LIBRARY LOGIC ---
+    window.addLibraryVideo = async () => {
+        try {
+            let name = document.getElementById('libExName').value;
+            let muscle = document.getElementById('libExMuscle').value;
+            let url = document.getElementById('libExVideo').value;
+
+            if(!name || !url) { 
+                window.showAlert("Exercise Name and Video Link are required."); 
+                return; 
+            }
+            
+            if (!Array.isArray(window.videoLibrary)) {
+                window.videoLibrary = [];
+            }
+            
+            window.videoLibrary.push({ id: Date.now(), name: name, muscle: muscle, url: url });
+            
+            document.getElementById('libExName').value = "";
+            document.getElementById('libExMuscle').value = "";
+            document.getElementById('libExVideo').value = "";
+            
+            await window.syncToCloud();
+            window.renderLibrary();
+            window.showAlert("Success! Video added to your cloud library.");
+        } catch (error) {
+            window.showAlert("Error saving video: " + error.message);
+        }
+    };
+
+    window.renderLibrary = () => {
+        if (!Array.isArray(window.videoLibrary)) {
+            window.videoLibrary = [];
+        }
+        
+        let htmlStr = "";
+        window.videoLibrary.forEach(v => {
+            htmlStr += `<div class="history-row bg-override" style="background:var(--card); padding:14px; border-radius:12px; border:1px solid var(--border); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                    <b style="font-size:14px; color:var(--text);">${v.name}</b>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:800; text-transform:uppercase;">${v.muscle || 'General'}</div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-action" onclick="window.open('${v.url}', '_blank')"><i data-feather="play" class="icon" style="margin:0;"></i> Test</button>
+                    <button class="btn-action danger" onclick="delLibraryVideo(${v.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button>
+                </div>
+            </div>`;
+        });
+        document.getElementById('libraryList').innerHTML = htmlStr || "<div style='font-size:13px; color:var(--text-muted); text-align:center; padding:10px;'>No videos added to library yet.</div>";
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+
+    window.delLibraryVideo = (id) => {
+        window.showConfirm("Delete this video from your library?", async () => {
+            window.videoLibrary = window.videoLibrary.filter(v => v.id !== id);
+            await window.syncToCloud();
+            window.renderLibrary();
+        });
+    };
+
+    // --- CLINICAL RESEARCH LOGIC ---
+    window.addResearchArticle = async () => {
+        try {
+            let title = document.getElementById('resTitle').value;
+            let cat = document.getElementById('resCat').value;
+            let content = document.getElementById('resContent').value;
+
+            if(!title || !content) { window.showAlert("Title and Content are required."); return; }
+            if (!Array.isArray(window.researchCenter)) window.researchCenter = [];
+            
+            window.researchCenter.push({ id: Date.now(), title, cat, content, date: window.today });
+            
+            document.getElementById('resTitle').value = "";
+            document.getElementById('resContent').value = "";
+            
+            await window.syncToCloud();
+            window.renderResearch();
+            window.showAlert("Article published to all VIP Portals!");
+        } catch (e) { window.showAlert("Error: " + e.message); }
+    };
+
+    window.renderResearch = () => {
+        if (!Array.isArray(window.researchCenter)) window.researchCenter = [];
+        let htmlStr = "";
+        window.researchCenter.slice().reverse().forEach(r => {
+            htmlStr += `<div class="history-row bg-override" style="background:var(--card); padding:14px; border-radius:12px; border:1px solid var(--border); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                    <b style="font-size:14px; color:var(--text);">${r.title}</b>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:800; text-transform:uppercase;">${r.cat} &nbsp;&bull;&nbsp; ${r.date}</div>
+                </div>
+                <button class="btn-action danger" onclick="delResearchArticle(${r.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button>
+            </div>`;
+        });
+        document.getElementById('researchList').innerHTML = htmlStr || "<div style='font-size:13px; color:var(--text-muted); text-align:center; padding:10px;'>No articles published yet.</div>";
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+
+    window.delResearchArticle = (id) => {
+        window.showConfirm("Delete this article? It will be removed from all client portals.", async () => {
+            window.researchCenter = window.researchCenter.filter(r => r.id !== id);
+            await window.syncToCloud();
+            window.renderResearch();
+        });
+    };
+
+
+    window.vipDataStore = null; 
+
+    // --- LIVE VIP PORTAL LOGIC ---
+    window.loginVIP = async (urlId) => {
+        const id = urlId || document.getElementById('vipIdInput').value.trim();
+        if(!id) return;
+        
+        document.getElementById('cloudLoader').innerText = "CONNECTING TO TRAINER...";
+        document.getElementById('cloudLoader').style.display = 'flex';
+        
+        try {
+            const docSnap = await getDoc(doc(db, "vip_portals", id));
+            if(docSnap.exists()) {
+                window.vipDataStore = docSnap.data();
+                document.getElementById('vipLoginBox').style.display = 'none';
+                document.getElementById('vipDashboard').style.display = 'block';
+                window.renderLiveVIP();
+            } else {
+                window.showAlert("Invalid Client ID. Please request a new link from your trainer.");
+                document.getElementById('vipLoginBox').style.display = 'block';
+            }
+            
+        } catch(e) { window.showAlert("Connection error: " + e.message); }
+
+        document.getElementById('cloudLoader').style.display = 'none';
+    };
+
+    window.renderLiveVIP = () => {
+        const d = window.vipDataStore;
+        document.getElementById('vipLiveName').innerText = d.client.name;
+        document.getElementById('vipLiveTrainer').innerText = `TRAINING BY ${d.trainerName.toUpperCase()}`;
+
+        // 1. Render Upcoming Session
+        let upHtml = `<div style="color:var(--text-muted); font-size:12px;">No upcoming sessions scheduled.</div>`;
+        if (d.plans && d.plans.length > 0) {
+            let future = d.plans.sort((a,b) => new Date(a.date) - new Date(b.date)).filter(p => p.date >= window.today);
+            if(future.length > 0) {
+                let p = future[0];
+                upHtml = `<div style="background:var(--card); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                    <div style="font-weight:800; font-size:15px; color:var(--text);">${p.workout}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:5px; font-weight:600;">${p.date} @ ${window.formatTime(p.time) || 'Anytime'}</div>
+                </div>`;
+            }
+        }
+        document.getElementById('vipUpcoming').innerHTML = upHtml;
+
+        // 2. Render Full Workout History
+        let prevHtml = `<div style="color:var(--text-muted); font-size:12px;">No past workouts logged.</div>`;
+        if (d.client.logs && Object.keys(d.client.logs).length > 0) {
+            prevHtml = `<div style="max-height:300px; overflow-y:auto; padding-right:5px;">`;
+            let dates = Object.keys(d.client.logs).sort().reverse();
+            
+            dates.forEach(date => {
+                if(d.client.logs[date] && d.client.logs[date].length > 0) {
+                    let safeDate = date.replace(/[^0-9]/g, ''); 
+                    
+                    prevHtml += `<div onclick="toggleGroup('vip-log-${safeDate}', this)" style="font-weight:800; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); color:var(--info); padding:12px; border-radius:10px; font-size:13px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                        <span><i data-feather="calendar" class="icon"></i> ${date}</span>
+                        <i data-feather="chevron-down" class="icon" style="margin:0; color:var(--text-muted);"></i>
+                    </div>`;
+                    
+                    prevHtml += `<div id="vip-log-${safeDate}" style="display:none; padding-left:10px; flex-direction:column; margin-bottom:15px; border-left:2px solid var(--border);">`;
+                    d.client.logs[date].forEach(ex => {
+                        let sets = (ex.sets || []).map(s => `${s.w || 0}kg × ${s.r || 0}`).join(' | ');
+                        prevHtml += `<div style="margin-bottom:10px; padding:10px; background:var(--card); border-radius:8px; border:1px solid var(--border); box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                            <div style="font-weight:800; font-size:13px; color:var(--text);">${ex.name}</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">${sets || 'No sets recorded'}</div>
+                        </div>`;
+                    });
+                    prevHtml += `</div>`;
+                }
+            });
+            prevHtml += `</div>`;
+        }
+        document.getElementById('vipPrevious').innerHTML = prevHtml;
+
+        // 3. Render Progress Chart
+        if(d.client.bca && d.client.bca.length > 0) {
+            document.getElementById('vipChartSec').style.display = 'block';
+            let chartData = [...d.client.bca].reverse();
+            new Chart(document.getElementById('vipLiveChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartData.map(b => b.date),
+                    datasets: [
+                        { label: 'Weight (kg)', data: chartData.map(b => b.w), borderColor: '#94a3b8', tension: 0.4 },
+                        { label: 'Muscle (kg)', data: chartData.map(b => b.smm), borderColor: '#10b981', tension: 0.4 },
+                        { label: 'Fat (%)', data: chartData.map(b => b.pbf), borderColor: '#ef4444', tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // 4. Render Clinical Hub (Research Docs)
+        let resHtml = `<div style="color:var(--text-muted); font-size:12px;">No articles published yet.</div>`;
+        if (d.researchCenter && d.researchCenter.length > 0) {
+            resHtml = d.researchCenter.slice().reverse().map(r => `
+                <div style="margin-bottom:12px; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+                    <div onclick="toggleGroup('vip-res-${r.id}', this)" style="padding:14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; background:var(--bg);">
+                        <div>
+                            <div style="font-weight:800; font-size:13px; color:var(--text);">${r.title}</div>
+                            <div style="font-size:10px; color:var(--text-muted); margin-top:4px; font-weight:800; text-transform:uppercase;">${r.cat}</div>
+                        </div>
+                        <i data-feather="chevron-down" class="icon" style="color:var(--text-muted); margin:0;"></i>
+                    </div>
+                    <div id="vip-res-${r.id}" style="display:none; padding:15px; font-size:13px; line-height:1.6; color:var(--text); border-top:1px solid var(--border); white-space:pre-wrap;">${r.content}</div>
+                </div>
+            `).join('');
+        }
+        document.getElementById('vipResearchDocs').innerHTML = resHtml;
+
+        // 5. Render Cardio History on VIP Portal
+        if (d.client.cardio && d.client.cardio.length > 0) {
+            document.getElementById('vipCardioSec').style.display = 'block';
+            let cardioHtml = d.client.cardio.map(log => `
+                <div style="background:var(--card); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:13px; color:var(--text);"><i data-feather="heart" class="icon" style="color:var(--danger);"></i> ${log.type}</b>
+                        <span style="font-size:11px; font-weight:800; color:var(--text-muted);">${log.date}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; font-weight:700;">
+                        <span><span style="color:var(--danger); font-size:16px;">${log.dist}</span> km</span>
+                        <span><span style="color:var(--text); font-size:14px;">${log.paceStr}</span> /km</span>
+                        <span><span style="color:var(--text); font-size:14px;">${log.time}</span> min</span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('vipCardioList').innerHTML = cardioHtml;
+        } else {
+            document.getElementById('vipCardioSec').style.display = 'none';
+        }
+        
+        // 6. Render Mobility History on VIP Portal
+        if (d.client.mobility && d.client.mobility.length > 0) {
+            document.getElementById('vipMobilitySec').style.display = 'block';
+            let mobHtml = d.client.mobility.map(log => `
+                <div style="background:var(--card); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:13px; color:var(--text);"><i data-feather="wind" class="icon" style="color:#10b981;"></i> ${log.muscle} - ${log.exercise}</b>
+                        <span style="font-size:11px; font-weight:800; color:var(--text-muted);">${log.date}</span>
+                    </div>
+                    <div style="display:flex; gap:15px; margin-top:8px; font-size:12px; font-weight:700; color:var(--text-muted);">
+                        <span>Duration: <span style="color:var(--text);">${log.time}s</span></span>
+                        <span>Sets: <span style="color:var(--text);">${log.sets}</span></span>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('vipMobilityList').innerHTML = mobHtml;
+        } else {
+            document.getElementById('vipMobilitySec').style.display = 'none';
+        }
+
+        window.searchVipLibrary(''); 
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+    
+    window.searchVipLibrary = (query) => {
+        let q = query ? query.toLowerCase() : '';
+        let libs = window.vipDataStore.videoLibrary || [];
+        let filtered = libs.filter(v => v.name.toLowerCase().includes(q) || (v.muscle && v.muscle.toLowerCase().includes(q)));
+        let htmlStr = filtered.map(v => `<a href="${v.url}" target="_blank" style="display:block; padding:12px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; text-decoration:none; transition:transform 0.2s;"><div style="font-weight:700; font-size:13px; color:var(--text); display:flex; justify-content:space-between;"><span><i data-feather="youtube" style="color:#ef4444; width:14px; margin-right:5px;"></i> ${v.name}</span><i data-feather="external-link" style="width:14px; color:var(--text-muted);"></i></div><div style="font-size:10px; color:var(--text-muted); margin-top:4px; font-weight:800; text-transform:uppercase;">${v.muscle || 'General'}</div></a>`).join('');
+        document.getElementById('vipLibResults').innerHTML = htmlStr || `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center;">No exercises match your search.</div>`;
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+
+    // --- THE URL ROUTER ---
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('vip')) {
         document.getElementById('cloudLoader').style.display = 'none';
         document.getElementById('authView').style.display = 'none';
         document.getElementById('appContainer').style.display = 'none';
         document.getElementById('vipPortal').style.display = 'block';
-        window.loadVipPortal();
+        
+        let clientId = urlParams.get('vip');
+        if (clientId && clientId !== 'login') {
+             window.loginVIP(clientId); 
+        } else {
+             document.getElementById('vipLoginBox').style.display = 'block'; 
+        }
     } else {
+        // --- NORMAL TRAINER LOGIN ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -651,7 +1260,11 @@
                         window.leads = data.leads || [];
                         window.expenses = data.expenses || [];
                         window.plans = data.plans || [];
-                        if(data.workoutDB) window.workoutDB = data.workoutDB;
+                        if(data.workoutDB) {
+                            window.workoutDB = data.workoutDB;
+                        }
+                        window.videoLibrary = data.videoLibrary || [];
+                        window.researchCenter = data.researchCenter || [];
 
                         document.getElementById('cloudLoader').style.display = 'none';
 
@@ -701,6 +1314,9 @@
         const salary = parseFloat(document.getElementById('authSalary').value);
         const shiftIn = document.getElementById('authIn').value;
         const shiftOut = document.getElementById('authOut').value;
+        const aiKey = document.getElementById('authAiKey').value;
+        
+        if(aiKey) localStorage.setItem('ryal_ai_key', aiKey);
 
         if(!name || !salary) { window.showAlert("Name and Base Salary are required."); return; }
         window.trainerProfile = { name, email, phone, salary, shiftIn, shiftOut };
@@ -710,12 +1326,15 @@
     };
 
     window.editTrainerProfile = () => {
+        window.closeMenu();
         document.getElementById('authName').value = window.trainerProfile.name || "";
         document.getElementById('authEmail').value = window.trainerProfile.email || "";
         document.getElementById('authPhone').value = window.trainerProfile.phone || "";
         document.getElementById('authSalary').value = window.trainerProfile.salary || "";
         document.getElementById('authIn').value = window.trainerProfile.shiftIn || "06:00";
         document.getElementById('authOut').value = window.trainerProfile.shiftOut || "14:00";
+        document.getElementById('authAiKey').value = localStorage.getItem('ryal_ai_key') || "";
+        
         document.getElementById('authView').style.display = 'flex';
         document.getElementById('loginBlock').style.display = 'none';
         document.getElementById('setupBlock').style.display = 'block';
@@ -724,16 +1343,30 @@
 
     window.syncToCloud = async () => {
         if (!currentUser) return;
-        const payload = {
-            profile: window.trainerProfile, clients: window.clients, shifts: window.shifts, leads: window.leads, expenses: window.expenses, plans: window.plans, workoutDB: window.workoutDB
-        };
-        try { await setDoc(doc(db, "trainers", currentUser.uid), payload); } catch (e) { console.error(e); }
+        const payload = { profile: window.trainerProfile, clients: window.clients, shifts: window.shifts, leads: window.leads, expenses: window.expenses, plans: window.plans, workoutDB: window.workoutDB, videoLibrary: window.videoLibrary, researchCenter: window.researchCenter };
+        try {
+            await setDoc(doc(db, "trainers", currentUser.uid), payload);
+            
+            const vipPromises = window.clients.map(c => {
+                const vipPayload = {
+                    trainerName: window.trainerProfile.name,
+                    client: c,
+                    plans: window.plans.filter(p => p.clientId == c.id),
+                    videoLibrary: window.videoLibrary || [],
+                    researchCenter: window.researchCenter || []
+                };
+                return setDoc(doc(db, "vip_portals", c.id.toString()), vipPayload);
+            });
+            await Promise.all(vipPromises);
+        } catch (e) { console.error(e); }
     };
 
     window.initApp = () => {
         document.getElementById('authView').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
-        document.getElementById('headerTrainerName').innerText = `${window.trainerProfile.name.split(' ')[0]}`;
+        
+        document.getElementById('menuTrainerName').innerText = `${window.trainerProfile.name.split(' ')[0]}`;
+        
         document.getElementById('attDate').value = window.today; document.getElementById('logDate').value = window.today;
         document.getElementById('expDate').value = window.today; document.getElementById('planDate').value = window.today;
         document.getElementById('reportMonthInput').value = window.today.slice(0, 7); 
@@ -749,7 +1382,10 @@
         window.renderExpenses();
         window.renderRoster();
         window.renderRevenue();
-        if (window.feather) window.feather.replace();
+        window.renderLibrary();
+        window.renderResearch();
+        window.renderSplitManager();
+        if (window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.renderPlanner = () => {
@@ -822,15 +1458,49 @@
 
     window.renderRevenue = () => {
         let mData = {}; let todayRev = 0;
-        window.shifts.forEach(s => { let m=s.date.slice(0,7); if(!mData[m]) mData[m]={sal:0,pt:0,pen:0, exp:0, daily:{}}; mData[m].sal += s.pay||0; if(!mData[m].daily[s.date]) mData[m].daily[s.date] = {sal:0,pt:0,pen:0}; mData[m].daily[s.date].sal += s.pay||0; if(s.isLate||s.isHalfDay) { let dailyRate = (window.trainerProfile.salary || 10000) / new Date(parseInt(s.date.split('-')[0]), parseInt(s.date.split('-')[1]), 0).getDate(); let p = dailyRate * 0.5; mData[m].pen += p; mData[m].daily[s.date].pen += p; } if(s.date === window.today) todayRev += s.pay||0; });
+        window.shifts.forEach(s => { 
+            let m=s.date.slice(0,7); 
+            if(!mData[m]) mData[m]={sal:0,pt:0,pen:0, exp:0, daily:{}}; 
+            
+            let dailyRate = (window.trainerProfile.salary || 10000) / new Date(parseInt(s.date.split('-')[0]), parseInt(s.date.split('-')[1]), 0).getDate(); 
+            let actualPay = s.pay || 0;
+            let penaltyAmount = 0;
+
+            if ((s.isLate || s.isHalfDay) && actualPay >= dailyRate - 1) {
+                actualPay = dailyRate * 0.5;
+                penaltyAmount = dailyRate * 0.5;
+            } else if (actualPay < dailyRate && (s.status === 'Present' || s.status === 'Week Off')) {
+                penaltyAmount = dailyRate - actualPay;
+            }
+
+            mData[m].sal += actualPay; 
+            mData[m].pen += penaltyAmount;
+            
+            if(!mData[m].daily[s.date]) mData[m].daily[s.date] = {sal:0,pt:0,pen:0}; 
+            mData[m].daily[s.date].sal += actualPay; 
+            mData[m].daily[s.date].pen += penaltyAmount;
+
+            if(s.date === window.today) todayRev += actualPay; 
+        });
+        
         window.clients.forEach(c => { let pt = ((c.pay||0)/(1+(c.gst||0))*(c.ret||0))/(c.sess||1); Object.keys(c.logs || {}).forEach(d => { if(c.logs[d].length>0) { let m=d.slice(0,7); if(!mData[m]) mData[m]={sal:0,pt:0,pen:0, exp:0, daily:{}}; mData[m].pt += pt; if(!mData[m].daily[d]) mData[m].daily[d] = {sal:0,pt:0,pen:0}; mData[m].daily[d].pt += pt; if(d === window.today) todayRev += pt; } }); });
         window.expenses.forEach(e => { let m=e.date.slice(0,7); if(!mData[m]) mData[m]={sal:0,pt:0,pen:0, exp:0, daily:{}}; mData[m].exp += e.amt; });
         
         let revHtml = "";
         Object.keys(mData).sort().reverse().forEach(m => { 
-            let net = mData[m].sal + mData[m].pt - mData[m].pen - mData[m].exp; let dailyHtml = ""; let sortedDays = Object.keys(mData[m].daily).sort().reverse(); 
-            if(sortedDays.length > 0) { dailyHtml = `<div style="margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;"><div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Daily Breakdown (Excl. Expenses)</div>`; sortedDays.forEach(d => { let dayData = mData[m].daily[d]; let dayNet = dayData.sal + dayData.pt - dayData.pen; dailyHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px solid var(--bg);"><span style="font-weight:600;"><i data-feather="calendar" class="icon" style="color:var(--text-muted);"></i> <span style="color:var(--text);">${d}</span></span><span style="font-weight:800; color:${dayNet < 0 ? 'var(--danger)' : 'var(--text)'};">₹${dayNet.toFixed(0)}</span></div>`; }); dailyHtml += `</div>`; } 
-            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.02);" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:10px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:var(--bg); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> SAL: <b style="color:var(--text);">₹${mData[m].sal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
+            let net = mData[m].sal + mData[m].pt - mData[m].exp; 
+            let dailyHtml = ""; let sortedDays = Object.keys(mData[m].daily).sort().reverse(); 
+            if(sortedDays.length > 0) { 
+                dailyHtml = `<div style="margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;"><div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Daily Breakdown (Excl. Expenses)</div>`; 
+                sortedDays.forEach(d => { 
+                    let dayData = mData[m].daily[d]; 
+                    let dayNet = dayData.sal + dayData.pt; 
+                    dailyHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px solid var(--bg);"><span style="font-weight:600;"><i data-feather="calendar" class="icon" style="color:var(--text-muted);"></i> <span style="color:var(--text);">${d}</span></span><span style="font-weight:800; color:${dayNet < 0 ? 'var(--danger)' : 'var(--text)'};">₹${dayNet.toFixed(0)}</span></div>`; 
+                }); 
+                dailyHtml += `</div>`; 
+            } 
+            let grossSal = mData[m].sal + mData[m].pen;
+            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.02);" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:10px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:var(--bg); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> GROSS SAL: <b style="color:var(--text);">₹${grossSal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
         });
         document.getElementById('revView').innerHTML = revHtml || "<div style='font-size:13px; color:var(--text-muted); text-align:center; padding:10px;'>No financial data yet.</div>";
         document.getElementById('statRevenue').innerText = `₹${todayRev.toFixed(0)}`;
@@ -899,7 +1569,10 @@
     window.convertLead = async (id) => {
         const lead = window.leads.find(l => l.id === id); window.leads = window.leads.filter(l => l.id !== id);
         document.getElementById('regName').value = lead.name || ""; document.getElementById('regPhone').value = lead.contact || "";
-        document.getElementById('sec-leads').classList.remove('active'); document.getElementById('sec-prof').classList.add('active');
+        window.closeMenu();
+        const extras = ['sec-leads', 'sec-exp', 'sec-master-routine', 'sec-library', 'sec-research', 'sec-support'];
+        extras.forEach(idx => { document.getElementById(idx).style.display = 'none'; });
+        document.getElementById('sec-prof').scrollIntoView();
         await window.syncToCloud(); window.render(); window.showAlert("Lead moved to Profile Setup!");
     };
 
@@ -910,8 +1583,15 @@
         const [inH, inM] = inT.split(':').map(Number); const [outH, outM] = outT.split(':').map(Number); const totalMins = (outH * 60 + outM) - (inH * 60 + inM);
         let isLate = false; let isHalfDay = false;
         if (status === 'Present' && totalMins > 0) { if (totalMins <= 240) isHalfDay = true; else if (totalMins < 420) isLate = true; }
+        
         const dailyRate = (window.trainerProfile.salary || 10000) / new Date(parseInt(d.split('-')[0]), parseInt(d.split('-')[1]), 0).getDate();
-        window.shifts.push({ id: Date.now(), date: d, inTime: inT, outTime: outT, status, isLate, isHalfDay, pay: (status === 'Present' || status === 'Week Off') ? dailyRate : 0 });
+        
+        let actualPay = (status === 'Present' || status === 'Week Off') ? dailyRate : 0;
+        if (status === 'Present' && (isLate || isHalfDay)) {
+            actualPay = dailyRate * 0.5; 
+        }
+        
+        window.shifts.push({ id: Date.now(), date: d, inTime: inT, outTime: outT, status, isLate, isHalfDay, pay: actualPay });
         await window.syncToCloud(); window.render();
     };
 
@@ -928,20 +1608,28 @@
 
     window.regClient = async () => {
         const name = document.getElementById('regName').value; if(!name) { window.showAlert("Name required"); return; }
-        window.clients.push({ id: Date.now(), name, phone: document.getElementById('regPhone').value, gender: document.getElementById('regGender').value, age: document.getElementById('regAge').value, height: document.getElementById('regHeight').value, receipt: document.getElementById('regReceipt').value, slot: document.getElementById('regSlot').value, level: document.getElementById('regLevel').value, med: document.getElementById('regMed').value, startDate: document.getElementById('regStart').value, endDate: document.getElementById('regEnd').value, prof: document.getElementById('regProf').value, pay: parseFloat(document.getElementById('regPay').value) || 0, sess: parseInt(document.getElementById('regSess').value) || 1, gst: parseFloat(document.getElementById('regGst').value) || 0, ret: parseFloat(document.getElementById('regRet').value) || 0.4, logs: {}, bca: [], meals: [], gallery: [] });
+        const goal = document.getElementById('regGoal').value || "General Fitness";
+        window.clients.push({ id: Date.now(), name, goal, phone: document.getElementById('regPhone').value, gender: document.getElementById('regGender').value, age: document.getElementById('regAge').value, height: document.getElementById('regHeight').value, receipt: document.getElementById('regReceipt').value, slot: document.getElementById('regSlot').value, level: document.getElementById('regLevel').value, med: document.getElementById('regMed').value, startDate: document.getElementById('regStart').value, endDate: document.getElementById('regEnd').value, prof: document.getElementById('regProf').value, pay: parseFloat(document.getElementById('regPay').value) || 0, sess: parseInt(document.getElementById('regSess').value) || 1, gst: parseFloat(document.getElementById('regGst').value) || 0, ret: parseFloat(document.getElementById('regRet').value) || 0.4, logs: {}, bca: [], meals: [], gallery: [], cardio: [], mobility: [] });
         await window.syncToCloud(); window.showAlert("Client Registered!"); window.render();
     };
 
     window.openOv = (id) => {
         window.curID = id; const c = window.clients.find(x => x.id === id);
-        if(!c.meals) c.meals = []; if(!c.gallery) c.gallery = []; if(!c.bca) c.bca = []; if(!c.logs) c.logs = {};
+        if(!c.meals) c.meals = []; if(!c.gallery) c.gallery = []; if(!c.bca) c.bca = []; if(!c.logs) c.logs = {}; if(!c.cardio) c.cardio = []; if(!c.mobility) c.mobility = [];
         document.getElementById('clientOverlay').style.display = 'block'; document.getElementById('clientMenu').style.display = 'none'; document.getElementById('ovEditForm').style.display = 'none';
+        document.getElementById('aiOutputBox').style.display = 'none';
+        
         document.getElementById('ovName').innerText = c.name;
         let phoneUI = c.phone ? `<span style="color:var(--info);"><i data-feather="phone" class="icon"></i> ${c.phone}</span> | ` : '';
         document.getElementById('ovTags').innerHTML = `${phoneUI}${c.gender || 'N/A'} | ${c.age?c.age+'Yrs':'-'} | ${c.height?c.height+'cm':'-'} | ${c.prof || 'General'}`;
+        document.getElementById('ovGoalText').innerText = c.goal || "None Set";
         document.getElementById('ovReceipt').innerText = c.receipt ? `Rec: ${c.receipt} ${c.slot?'| '+window.formatTime(c.slot):''} | Valid: ${c.startDate||'?'} to ${c.endDate||'?'}` : '';
         const medBox = document.getElementById('ovMed'); if(c.med && c.med.toLowerCase() !== "none") { medBox.innerHTML = `<i data-feather="alert-triangle" class="icon" style="margin-right:8px;"></i> ALERT: ${c.med}`; medBox.style.display = 'flex'; } else medBox.style.display = 'none';
-        document.getElementById('bcaDate').value = window.today; document.getElementById('scoutEngine').style.display = "none";
+        
+        document.getElementById('bcaDate').value = window.today; 
+        document.getElementById('cardioDate').value = window.today;
+        document.getElementById('mobDate').value = window.today;
+        document.getElementById('scoutEngine').style.display = "none";
         document.getElementById('logWorkoutName').value = ""; document.getElementById('splitSelect').value = ""; document.getElementById('exTagsContainer').innerHTML = ""; document.getElementById('setForm').style.display = 'none';
         if(c.bca && c.bca.length > 0) { 
             const r = c.bca[0]; document.getElementById('inWeight').value = r.w||""; document.getElementById('inSmm').value = r.smm||""; document.getElementById('inPbf').value = r.pbf||""; document.getElementById('inBmi').value = r.bmi||""; document.getElementById('inScore').value = r.score||""; document.getElementById('inVisFat').value = r.visFat||""; document.getElementById('inBmr').value = r.bmr||""; 
@@ -951,7 +1639,9 @@
         window.renderGallery(); 
         window.renderBcaHistory(); 
         window.renderTonnageChart(); 
-        feather.replace();
+        window.renderCardio();
+        window.renderMobility();
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.toggleHistory = (id) => { const row = document.getElementById(`hist-${id}`); row.style.display = row.style.display === 'none' ? 'table-row' : 'none'; };
@@ -961,6 +1651,7 @@
     window.showEditForm = () => {
         document.getElementById('clientMenu').style.display = 'none'; const c = window.clients.find(x => x.id === window.curID);
         document.getElementById('editName').value = c.name || ""; document.getElementById('editPhone').value = c.phone || "";
+        document.getElementById('editGoal').value = c.goal || "";
         document.getElementById('editGender').value = c.gender || "Other"; document.getElementById('editAge').value = c.age || "";
         document.getElementById('editHeight').value = c.height || ""; document.getElementById('editSlot').value = c.slot || "";
         document.getElementById('editReceipt').value = c.receipt || ""; document.getElementById('editSess').value = c.sess || "";
@@ -971,6 +1662,7 @@
     window.saveClientEdit = async () => {
         const c = window.clients.find(x => x.id === window.curID);
         c.name = document.getElementById('editName').value || c.name; c.phone = document.getElementById('editPhone').value || ""; c.gender = document.getElementById('editGender').value || c.gender; c.age = document.getElementById('editAge').value || ""; c.height = document.getElementById('editHeight').value || ""; c.slot = document.getElementById('editSlot').value || ""; c.receipt = document.getElementById('editReceipt').value || ""; c.sess = parseInt(document.getElementById('editSess').value) || c.sess; c.endDate = document.getElementById('editEnd').value || ""; c.med = document.getElementById('editMed').value || "";
+        c.goal = document.getElementById('editGoal').value || c.goal;
         await window.syncToCloud(); document.getElementById('ovEditForm').style.display = 'none'; window.openOv(window.curID); window.render(); 
     };
 
@@ -980,6 +1672,12 @@
         const c = window.clients.find(x => x.id === window.curID);
         let title = c.gender === 'Female' ? "Ma'am" : (c.gender === 'Male' ? "Sir" : ""); let greeting = title ? `Hello ${title},` : `Hello ${c.name},`; let timeStr = c.slot ? ` at *${window.formatTime(c.slot)}*` : ``; let msg = `${greeting}\n\nThis is a gentle reminder for your upcoming personal training session${timeStr}. \n\nSee you for your session! 💪\n- ${window.trainerProfile.name.split(' ')[0]}`;
         let cleanPhone = c.phone ? c.phone.replace(/[^0-9]/g, '') : ''; let link = (cleanPhone && cleanPhone.length >= 10) ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`; window.open(link);
+    };
+
+    window.generateVIPLink = () => {
+        const link = window.location.origin + window.location.pathname + '?vip=' + window.curID;
+        navigator.clipboard.writeText(link).then(() => window.showAlert("VIP Link copied to clipboard!"));
+        document.getElementById('clientMenu').style.display = 'none';
     };
 
     // --- GALLERY TIMELINE & AUTO SLIDESHOW LOGIC ---
@@ -995,7 +1693,7 @@
         c.gallery.forEach((p, i) => {
             htmlStr += `<div class="gallery-item" style="animation: fadeUp 0.3s ease forwards; animation-delay: ${i * 0.1}s; opacity:0;"><img src="${p.img}" class="gallery-img" onclick="startSlideshow(${i})" style="cursor:pointer;"><div class="gallery-date">${p.date}</div><button class="gallery-del" onclick="delGalleryPhoto(${p.id})"><i data-feather="x" style="width:14px;"></i></button></div>`;
         });
-        grid.innerHTML = htmlStr; feather.replace();
+        grid.innerHTML = htmlStr; if(window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.delGalleryPhoto = (photoId) => { window.showConfirm("Delete this photo from timeline?", async () => { const c = window.clients.find(x => x.id === window.curID); c.gallery = c.gallery.filter(p => p.id !== photoId); await window.syncToCloud(); window.renderGallery(); }); };
@@ -1004,14 +1702,13 @@
         const c = window.clients.find(x => x.id === window.curID);
         if(!c.gallery || c.gallery.length === 0) { window.showAlert("No photos to display."); return; }
         
-        // Start from oldest if clicking "Play Auto", or from specific clicked image
         window.currentSlideIdx = (idx !== undefined) ? idx : (c.gallery.length - 1); 
         
         document.getElementById('slideshowModal').style.display = 'flex';
         window.updateSlide();
         
         clearInterval(window.slideInterval);
-        window.slideInterval = setInterval(() => { window.nextSlide(); }, 2500); // 2.5s per slide
+        window.slideInterval = setInterval(() => { window.nextSlide(); }, 2500); 
     };
 
     window.updateSlide = () => {
@@ -1019,13 +1716,13 @@
         const photo = c.gallery[window.currentSlideIdx];
         document.getElementById('slideImg').src = photo.img;
         document.getElementById('slideDate').innerText = photo.date;
-        feather.replace();
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.nextSlide = () => { 
         const c = window.clients.find(x => x.id === window.curID);
-        window.currentSlideIdx--; // Going backwards in array goes forwards in time (since array is reverse sorted)
-        if(window.currentSlideIdx < 0) { window.currentSlideIdx = c.gallery.length - 1; } // Loop back to start
+        window.currentSlideIdx--; 
+        if(window.currentSlideIdx < 0) { window.currentSlideIdx = c.gallery.length - 1; } 
         window.updateSlide(); 
     };
     
@@ -1045,8 +1742,8 @@
             window.showAlert("No photo found for " + date + ". Uploading will attach to this date.");
         }
     };
-    // --- END GALLERY LOGIC ---
 
+    // --- INBODY / NUTRITION LOGIC ---
     window.saveBca = async () => {
         const c = window.clients.find(x => x.id === window.curID); 
         if(!c.bca) c.bca = [];
@@ -1064,7 +1761,7 @@
         c.bca.forEach(b => {
             htmlStr += `<div class="history-row" style="flex-direction:column; align-items:flex-start; background:var(--card); padding:14px; border-radius:12px; border:1px solid var(--border); margin-bottom:10px; transition: transform 0.2s;"><div style="display:flex; justify-content:space-between; width:100%; margin-bottom:8px;"><span style="font-weight:800; font-size:13px; color:var(--text);"><i data-feather="calendar" class="icon" style="color:var(--info);"></i> ${b.date}</span><button class="btn-action danger" onclick="delBca('${b.date}')"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button></div><div style="font-size:12px; color:var(--text-muted); line-height:1.6;"><b>W:</b> ${b.w||0}kg &nbsp;|&nbsp; <b>SMM:</b> ${b.smm||0}kg &nbsp;|&nbsp; <b>PBF:</b> ${b.pbf||0}% <br><b>Score:</b> ${b.score||'-'} &nbsp;|&nbsp; <b>Visc:</b> Lvl ${b.visFat||'-'} &nbsp;|&nbsp; <b>BMR:</b> ${b.bmr||'-'}</div></div>`;
         });
-        box.innerHTML = htmlStr; feather.replace();
+        box.innerHTML = htmlStr; if(window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.delBca = (date) => { window.showConfirm("Delete this BCA log?", async () => { const c = window.clients.find(x => x.id === window.curID); c.bca = c.bca.filter(b => b.date !== date); if(c.bca.length === 0) { document.querySelectorAll('#inWeight,#inSmm,#inPbf,#inBmi,#inScore,#inVisFat,#inBmr').forEach(el => { if(el) el.value=""; }); } await window.syncToCloud(); window.renderBcaHistory(); }); };
@@ -1081,14 +1778,14 @@
         
         let nutText = `<div style="background:var(--bg); border:1px solid var(--primary); padding:15px; border-radius:12px; margin-top:15px; box-shadow: 0 4px 15px rgba(195, 245, 60, 0.05);"><div style="font-size:12px; color:var(--text); font-weight:800; margin-bottom:10px; display:flex; align-items:center;"><i data-feather="target" class="icon" style="color:var(--primary);"></i> PERFORMANCE MACROS</div><div style="display:flex; justify-content:space-between; text-align:center; margin-top:8px;"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">TDEE</div><div style="font-weight:800; font-size:16px; color:var(--text); margin-top:4px;">${tdee}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">TARGET</div><div style="font-weight:800; font-size:16px; color:var(--primary); margin-top:4px;">${targetCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:16px; color:#10b981; margin-top:4px;">${pro}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:16px; color:#f59e0b; margin-top:4px;">${fat}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:16px; color:#3b82f6; margin-top:4px;">${carb}g</div></div></div></div>`;
         let scout = `<div class="plan-box"><div style="font-weight:800; font-size:15px; border-bottom:1px solid var(--border); padding-bottom:8px; color:var(--text);">AI Blueprint</div><div style="font-size:13px; margin-top:12px; color:var(--text-muted);"><b>Focus:</b> <span style="color:var(--text);">${goal}</span></div>${visFat >= 10 ? `<div style="color:var(--danger); font-size:12px; margin-top:8px; font-weight:800; background:rgba(239, 68, 68, 0.1); padding:8px; border-radius:8px;">⚠️ High Visceral Fat. Strict Zone 2 Cardio required.</div>` : ''}${nutText}</div>`;
-        document.getElementById('ovScout').innerHTML = scout; document.getElementById('scoutEngine').style.display = "block"; feather.replace(); window.renderMealBuilder();
+        document.getElementById('ovScout').innerHTML = scout; document.getElementById('scoutEngine').style.display = "block"; if(window.feather) setTimeout(() => window.feather.replace(), 10); window.renderMealBuilder();
     };
 
     window.fetchMacros = async () => {
         let food = document.getElementById('mbName').value; let amt = parseFloat(document.getElementById('mbQty').value) || 100; let unit = document.getElementById('mbUnit').value;
         if(!food) { window.showAlert("Enter a food name first to fetch its macros!"); return; }
         let btn = document.getElementById('btnFetchMacro'); let oldHtml = btn.innerHTML;
-        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i>`; feather.replace();
+        btn.innerHTML = `<i data-feather="loader" class="icon" style="animation:spin 1s linear infinite; margin:0;"></i>`; if(window.feather) setTimeout(() => window.feather.replace(), 10);
         try {
             let url = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&pageSize=1`;
             let res = await fetch(url); let data = await res.json();
@@ -1099,7 +1796,7 @@
                 document.getElementById('mbP').value = Math.round(getNut(1003) * multiplier); document.getElementById('mbC').value = Math.round(getNut(1005) * multiplier); document.getElementById('mbF').value = Math.round(getNut(1004) * multiplier);
                 window.showAlert(`Fetched USDA data for: ${p.description}`);
             } else { window.showAlert("Food not found in USDA database."); }
-        } catch(e) { window.showAlert("USDA fetch failed."); } finally { btn.innerHTML = oldHtml; feather.replace(); }
+        } catch(e) { window.showAlert("USDA fetch failed."); } finally { btn.innerHTML = oldHtml; if(window.feather) setTimeout(() => window.feather.replace(), 10); }
     };
 
     window.renderMealBuilder = () => {
@@ -1116,7 +1813,6 @@
         
         statsArea.innerHTML = `<h3 style="font-size:12px; text-transform:uppercase; color:var(--info); margin:15px 0; font-weight:800;"><i data-feather="pie-chart" class="icon"></i> Daily Meal Builder</h3><div style="display:flex; justify-content:space-between; text-align:center; background:var(--bg); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:18px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.02);"><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">REM. KCAL</div><div style="font-weight:800; font-size:16px; margin-top:4px; color:${remCal<0?'var(--danger)':'var(--text)'};">${remCal}</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">PRO</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remP<0?'var(--danger)':'#10b981'};">${remP}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">CARB</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remC<0?'var(--danger)':'#3b82f6'};">${remC}g</div></div><div><div style="font-size:10px; color:var(--text-muted); font-weight:800;">FAT</div><div style="font-weight:800; font-size:14px; margin-top:4px; color:${remF<0?'var(--danger)':'#f59e0b'};">${remF}g</div></div></div>`;
         
-        // Group meals by category
         const cats = ["Meal 1 (Breakfast)", "Meal 2 (Mid-Morning)", "Meal 3 (Lunch)", "Meal 4 (Snacks)", "Meal 5 (Dinner)", "Meal 6 (Late Snack)", "Other"];
         let grouped = {};
         (c.meals || []).forEach(m => { let cat = m.cat || "Other"; if(!grouped[cat]) grouped[cat] = []; grouped[cat].push(m); });
@@ -1132,7 +1828,7 @@
         });
         
         listArea.innerHTML = mealHtml;
-        if(window.feather) window.feather.replace();
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
     };
 
     window.addMeal = async () => { 
@@ -1148,39 +1844,441 @@
         c.meals.push({ id: Date.now(), name: n, cat: cat, p: p, c: carb, f: f }); 
         
         await window.syncToCloud(); 
-        document.getElementById('mbName').value = ""; // clear input
+        document.getElementById('mbName').value = ""; 
         window.renderMealBuilder(); 
     };
 
+    // --- THE AI CO-PILOT ENGINE ---
+    window.runPlateauAI = async () => {
+        const apiKey = localStorage.getItem('ryal_ai_key');
+        if(!apiKey) { 
+            window.showAlert("Please add your Gemini API Key in your Profile Settings first!"); 
+            return; 
+        }
+
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+
+        document.getElementById('aiOutputBox').style.display = 'block';
+        document.getElementById('aiThinking').style.display = 'flex';
+        document.getElementById('aiResultText').style.display = 'none';
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+
+        let w = "Unknown"; let pbf = "Unknown"; let smm = "Unknown";
+        if(c.bca && c.bca.length > 0) { w = c.bca[0].w || "Unknown"; pbf = c.bca[0].pbf || "Unknown"; smm = c.bca[0].smm || "Unknown"; }
+        
+        let macros = c.macros ? `${c.macros.p}g Pro, ${c.macros.c}g Carb, ${c.macros.f}g Fat` : "Not calculated";
+        
+        let recentWorkouts = "";
+        let dates = Object.keys(c.logs || {}).sort().reverse().slice(0, 4);
+        dates.forEach(d => {
+            recentWorkouts += `Date: ${d}\n`;
+            c.logs[d].forEach(ex => {
+                let bestSet = ex.sets && ex.sets[0] ? `${ex.sets[0].w}kg x ${ex.sets[0].r}` : '';
+                recentWorkouts += `- ${ex.name}: ${bestSet}\n`;
+            });
+        });
+        if(recentWorkouts === "") recentWorkouts = "No recent training data logged.";
+
+        const prompt = `You are an elite sports scientist and clinical personal trainer. I am the trainer. Review my client's data and provide a 3-step advanced protocol to break their plateau, optimize recovery, and stimulate new growth. Keep it concise, highly clinical, and actionable. Do not use asterisks or markdown formatting, use plain HTML like <br> and <b> for bolding.
+
+        Client Profile: ${c.name}, ${c.gender}, ${c.age} years old.
+        Current Body Comp: Weight ${w}kg, Fat ${pbf}%, Muscle Mass ${smm}kg.
+        Target Macros: ${macros}.
+
+        Recent Training Performance (Last 4 Sessions):
+        ${recentWorkouts}
+        
+        Give me:
+        1. A periodization/training adjustment.
+        2. A nutritional or recovery adjustment.
+        3. A specific biomechanical or exercise swap suggestion.`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const data = await response.json();
+            if(data.error) throw new Error(data.error.message);
+            
+            let reply = data.candidates[0].content.parts[0].text;
+
+            document.getElementById('aiThinking').style.display = 'none';
+            document.getElementById('aiResultText').innerHTML = reply;
+            document.getElementById('aiResultText').style.display = 'block';
+
+        } catch (error) {
+            document.getElementById('aiThinking').style.display = 'none';
+            document.getElementById('aiResultText').innerHTML = `<span style="color:var(--danger);"><b>AI Error:</b> ${error.message}</span>`;
+            document.getElementById('aiResultText').style.display = 'block';
+        }
+    };
+
+    // --- NEW: AI EXERCISE GENERATOR ---
+    window.generateAIExercises = async (isRefresh = false) => {
+        const apiKey = localStorage.getItem('ryal_ai_key');
+        if(!apiKey) { window.showAlert("Please add your Gemini API Key in your Profile Settings first!"); return; }
+        
+        const input = document.getElementById('aiWorkoutInput').value;
+        if(!input) { window.showAlert("Type a muscle group or goal first!"); return; }
+        
+        const btn = isRefresh ? document.getElementById('aiRefreshBtn') : document.getElementById('aiGenerateBtn');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`;
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+        
+        let extra = isRefresh ? "Provide 6 completely different, unique or advanced exercises for this. " : "";
+        const prompt = `Act as an expert fitness coach. ${extra}Provide exactly 6 exercises for: ${input}. 
+        Return ONLY a comma-separated list of the exercise names. No bullet points, no extra text, no asterisks, no numbers. Just the names. Example: Barbell Bench Press, Push Up, Cable Crossover, Dips, Dumbbell Fly, Pec Deck`;
+        
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await response.json();
+            if(data.error) throw new Error(data.error.message);
+            
+            let text = data.candidates[0].content.parts[0].text;
+            
+            text = text.replace(/\*/g, ''); 
+            if (text.toLowerCase().includes('here are') || text.toLowerCase().includes('sure')) {
+                let lines = text.split('\n');
+                text = lines.filter(l => !l.toLowerCase().includes('here are') && !l.toLowerCase().includes('sure') && l.trim().length > 0).join(',');
+            }
+            
+            let exercises = text.split(/,|\n/)
+                                .map(e => e.replace(/^[0-9.\-]+\s*/, '').trim())
+                                .filter(e => e.length > 2 && e.length < 35); 
+            
+            exercises = exercises.slice(0, 8);
+            
+            if (exercises.length === 0) {
+                throw new Error("AI returned unreadable text. Hit refresh to try again.");
+            }
+            
+            let htmlStr = "";
+            exercises.forEach(ex => {
+                htmlStr += `<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`;
+            });
+            
+            document.getElementById('splitSelect').value = "";
+            document.getElementById('exTagsContainer').innerHTML = htmlStr;
+            document.getElementById('setForm').style.display = 'none';
+            
+        } catch(e) {
+            window.showAlert("AI Fetch Failed: " + e.message);
+        } finally {
+            btn.innerHTML = originalHtml;
+            if(window.feather) setTimeout(() => window.feather.replace(), 10);
+        }
+    };
+
+    window.saveMobility = async () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c.mobility) c.mobility = [];
+        
+        const d = document.getElementById('mobDate').value || window.today;
+        const muscle = document.getElementById('mobMuscle').value;
+        const ex = document.getElementById('mobExercise').value;
+        const time = parseInt(document.getElementById('mobTime').value) || 0;
+        const sets = parseInt(document.getElementById('mobSets').value) || 1;
+        
+        if(!muscle || !ex) { window.showAlert("Target Muscle and Exercise are required."); return; }
+        
+        c.mobility.push({ id: Date.now(), date: d, muscle, exercise: ex, time, sets });
+        c.mobility.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        document.getElementById('mobMuscle').value = "";
+        document.getElementById('mobExercise').value = "";
+        document.getElementById('mobTime').value = "";
+        document.getElementById('mobSets').value = "";
+        
+        await window.syncToCloud();
+        window.renderMobility();
+    };
+
+    window.renderMobility = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        const list = document.getElementById('mobList');
+        
+        if(!c.mobility || c.mobility.length === 0) { list.style.display = 'none'; return; }
+        
+        list.style.display = 'block';
+        
+        let htmlStr = "";
+        c.mobility.forEach(log => {
+            htmlStr += `<div class="history-row bg-override" style="background:var(--card); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b style="font-size:13px; color:var(--text);">${log.muscle}: ${log.exercise}</b>
+                        <span style="font-size:11px; font-weight:800; color:var(--text-muted);">${log.date}</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px; font-weight:600;">Hold: ${log.time}s &nbsp;|&nbsp; Sets: ${log.sets}</div>
+                </div>
+                <button class="btn-action danger" style="margin-left:10px;" onclick="delMobility(${log.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button>
+            </div>`;
+        });
+        list.innerHTML = htmlStr;
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+    };
+
+    window.delMobility = (id) => {
+        window.showConfirm("Delete this mobility log?", async () => {
+            const c = window.clients.find(x => x.id === window.curID);
+            c.mobility = c.mobility.filter(log => log.id !== id);
+            await window.syncToCloud();
+            window.renderMobility();
+        });
+    };
+
+    window.saveCardio = async () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c.cardio) c.cardio = [];
+        
+        const d = document.getElementById('cardioDate').value || window.today;
+        const type = document.getElementById('cardioType').value;
+        const dist = parseFloat(document.getElementById('cardioDist').value) || 0;
+        const time = parseInt(document.getElementById('cardioTime').value) || 0;
+        const hr = parseInt(document.getElementById('cardioHr').value) || 0;
+        
+        if(dist === 0 || time === 0) { window.showAlert("Distance and Time required."); return; }
+        
+        let pace = time / dist;
+        let paceMins = Math.floor(pace);
+        let paceSecs = Math.round((pace - paceMins) * 60);
+        let paceStr = `${paceMins}'${paceSecs.toString().padStart(2, '0')}"`;
+        
+        c.cardio.push({ id: Date.now(), date: d, type, dist, time, hr, paceStr });
+        c.cardio.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        document.getElementById('cardioDist').value = ""; 
+        document.getElementById('cardioTime').value = ""; 
+        document.getElementById('cardioHr').value = "";
+        
+        await window.syncToCloud();
+        window.renderCardio();
+    };
+
+    window.renderCardio = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        const list = document.getElementById('cardioList');
+        
+        if(!c.cardio || c.cardio.length === 0) { 
+            list.style.display = 'none'; 
+            document.getElementById('cardioChartBox').style.display = 'none'; 
+            return; 
+        }
+        
+        list.style.display = 'block'; 
+        document.getElementById('cardioChartBox').style.display = 'block';
+        
+        let htmlStr = "";
+        c.cardio.forEach(log => {
+            htmlStr += `<div class="history-row bg-override" style="background:var(--card); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; flex-direction:column; align-items:stretch;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <b style="font-size:13px; color:var(--text);"><i data-feather="heart" class="icon" style="color:var(--danger);"></i> ${log.type}</b>
+                    <div>
+                        <span style="font-size:11px; font-weight:800; color:var(--text-muted); margin-right:10px;">${log.date}</span>
+                        <button class="btn-action danger" onclick="delCardio(${log.id})"><i data-feather="trash-2" class="icon" style="margin:0;"></i></button>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700;">
+                    <span><span style="color:var(--danger); font-size:16px;">${log.dist}</span> km</span>
+                    <span><span style="color:var(--text); font-size:14px;">${log.paceStr}</span> /km</span>
+                    <span><span style="color:var(--text); font-size:14px;">${log.time}</span> min</span>
+                </div>
+            </div>`;
+        });
+        list.innerHTML = htmlStr;
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+        window.renderCardioChart();
+    };
+
+    window.delCardio = (id) => {
+        window.showConfirm("Delete this cardio log?", async () => {
+            const c = window.clients.find(x => x.id === window.curID);
+            c.cardio = c.cardio.filter(log => log.id !== id);
+            await window.syncToCloud();
+            window.renderCardio();
+        });
+    };
+
+    window.renderCardioChart = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(window.cardioChartInst) window.cardioChartInst.destroy();
+        if(!c.cardio || c.cardio.length === 0) return;
+        
+        let chartData = [...c.cardio].reverse().slice(-10);
+        const style = getComputedStyle(document.body); 
+        let barColor = style.getPropertyValue('--danger').trim(); 
+        if(!barColor) barColor = '#ef4444';
+        
+        const ctx = document.getElementById('cardioChart').getContext('2d');
+        window.cardioChartInst = new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: chartData.map(d=>d.date), 
+                datasets: [{ label: 'Distance (km)', data: chartData.map(d=>d.dist), backgroundColor: barColor, borderRadius: 6 }] 
+            }, 
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false } } } 
+        });
+    };
+
+    window.generateProgressPDF = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+        let printWindow = window.open('', '_blank');
+        let htmlString = '<!DOCTYPE html><html><head><title>Progress - ' + c.name + '</title><style>body{font-family:sans-serif;padding:40px;color:#0f172a;font-size:13px;background:#fff;}h1{margin:0;font-size:26px;text-transform:uppercase;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #cbd5e1;padding:12px 10px;text-align:left;}th{background:#f8fafc;font-weight:800;text-transform:uppercase;font-size:10px;color:#475569;}</style></head><body>';
+        htmlString += '<div style="border-bottom:2px solid #0f172a;padding-bottom:15px;margin-bottom:30px;text-align:center;"><h1>CLINICAL PROGRESS REPORT</h1><p style="margin-top:5px;font-weight:700;">Client: ' + c.name + ' | Goal: ' + (c.goal||'None Set') + '</p></div>';
+        
+        if(c.bca && c.bca.length > 0) {
+            htmlString += '<h2>Body Composition</h2><table><thead><tr><th>Date</th><th>Weight (kg)</th><th>SMM (kg)</th><th>PBF (%)</th><th>BMR</th><th>Score</th></tr></thead><tbody>';
+            c.bca.forEach(b => { htmlString += `<tr><td>${b.date}</td><td>${b.w||'-'}</td><td>${b.smm||'-'}</td><td>${b.pbf||'-'}</td><td>${b.bmr||'-'}</td><td>${b.score||'-'}</td></tr>`; });
+            htmlString += '</tbody></table>';
+        }
+        
+        let wks = Object.keys(c.logs || {}).sort().reverse().slice(0,10);
+        if(wks.length > 0) {
+            htmlString += '<h2>Recent Workouts (Last 10)</h2><table><thead><tr><th>Date</th><th>Workout</th><th>Exercises & Sets</th></tr></thead><tbody>';
+            wks.forEach(d => {
+                let exDetails = c.logs[d].map(ex => {
+                    let setsStr = (ex.sets||[]).map(s=>`${s.w||0}kg x ${s.r||0}`).join(', ');
+                    return `<b>${ex.name}:</b> ${setsStr}`;
+                }).join('<br>');
+                htmlString += `<tr><td style="width:100px;">${d}</td><td>${c.logs[d][0]?.workoutName||'General'}</td><td>${exDetails}</td></tr>`;
+            });
+            htmlString += '</tbody></table>';
+        }
+        
+        htmlString += '<scr' + 'ipt>setTimeout(function(){window.print();}, 500);</scr' + 'ipt></body></html>';
+        printWindow.document.write(htmlString);
+        printWindow.document.close();
+    };
 
     window.loadSplit = (splitName) => {
-        const cont = document.getElementById('exTagsContainer'); document.getElementById('setForm').style.display = 'none'; if(!splitName) { cont.innerHTML = ""; return; }
-        document.getElementById('logWorkoutName').value = document.getElementById('logWorkoutName').value || splitName;
-        let htmlStr = ""; window.workoutDB[splitName].forEach(ex => { htmlStr += `<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`; });
-        cont.innerHTML = htmlStr;
+        try {
+            const cont = document.getElementById('exTagsContainer'); 
+            document.getElementById('setForm').style.display = 'none'; 
+            if(!splitName) { cont.innerHTML = ""; return; }
+            
+            if(window.workoutDB[splitName]) {
+                document.getElementById('logWorkoutName').value = document.getElementById('logWorkoutName').value || splitName;
+                let htmlStr = ""; 
+                window.workoutDB[splitName].forEach(ex => { 
+                    htmlStr += `<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`; 
+                });
+                cont.innerHTML = htmlStr;
+            } else {
+                cont.innerHTML = ""; 
+            }
+        } catch (error) {
+            window.showAlert("Split Loading Error: " + error.message);
+        }
     };
-    
+
     window.searchEx = (val) => {
         const resDiv = document.getElementById('searchRes'); if (!val || val.length < 2) { resDiv.style.display = 'none'; return; }
         let matches = []; let searchLower = val.toLowerCase();
         Object.values(window.workoutDB).forEach(exList => { exList.forEach(ex => { if (ex.toLowerCase().includes(searchLower) && !matches.includes(ex)) { matches.push(ex); } }); });
         if (!matches.some(m => m.toLowerCase() === searchLower)) { matches.push(val + " (Custom)"); }
         let htmlStr = ""; matches.forEach(ex => { htmlStr += `<div style="padding:12px; font-size:14px; font-weight:600; color:var(--text); border-bottom:1px solid var(--border); cursor:pointer; display:flex; align-items:center;" onclick="applySearchedEx('${ex.replace(" (Custom)", "")}', ${ex.includes('(Custom)')})"><i data-feather="plus-circle" class="icon" style="color:var(--info);"></i> ${ex}</div>`; });
-        resDiv.innerHTML = htmlStr; feather.replace(); resDiv.style.display = 'block';
+        resDiv.innerHTML = htmlStr; if(window.feather) setTimeout(() => window.feather.replace(), 10); resDiv.style.display = 'block';
     };
 
     window.applySearchedEx = async (name, isCustom) => {
-        document.getElementById('searchRes').style.display = 'none'; document.getElementById('exSearch').value = ""; document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active'));
-        if(isCustom) { let exists = false; Object.values(window.workoutDB).forEach(list => { if(list.includes(name)) exists = true; }); if(!exists) { window.workoutDB["Custom Exercises"].push(name); await window.syncToCloud(); } }
-        window.curExName = name; document.getElementById('curEx').innerText = name;
-        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs || {}).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
-        const recUI = document.getElementById('historyRecall'); if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; recUI.style.display = 'flex'; } else { recUI.style.display = 'none'; } window.generateSetInputs(); document.getElementById('setForm').style.display = 'block'; 
+        try {
+            document.getElementById('searchRes').style.display = 'none'; 
+            document.getElementById('exSearch').value = ""; 
+            document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active'));
+            
+            if(isCustom) { 
+                let exists = false; 
+                Object.values(window.workoutDB).forEach(list => { 
+                    if(list && list.includes(name)) exists = true; 
+                }); 
+                if(!exists) { 
+                    if(!window.workoutDB["General Custom"]) window.workoutDB["General Custom"] = [];
+                    window.workoutDB["General Custom"].push(name); 
+                    await window.syncToCloud(); 
+                } 
+            }
+            
+            window.curExName = name; 
+            document.getElementById('curEx').innerText = name;
+            
+            const c = window.clients.find(x => x.id === window.curID); 
+            if (!c) return; 
+            if (!c.logs) c.logs = {}; 
+            
+            window.lastPerfData = null; 
+            let dates = Object.keys(c.logs).sort().reverse(); 
+            for(let d of dates) { 
+                if(c.logs[d] && Array.isArray(c.logs[d])) {
+                    let found = c.logs[d].find(l => l.name === name); 
+                    if(found && found.sets && found.sets.length > 0) { 
+                        window.lastPerfData = found.sets[0]; 
+                        break; 
+                    } 
+                }
+            }
+            
+            const recUI = document.getElementById('historyRecall'); 
+            if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { 
+                document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; 
+                recUI.style.display = 'flex'; 
+            } else { 
+                recUI.style.display = 'none'; 
+            } 
+            
+            window.generateSetInputs(); 
+            document.getElementById('setForm').style.display = 'block'; 
+        } catch (error) {
+            window.showAlert("Exercise Selection Error: " + error.message);
+        }
     };
 
     window.selSplitEx = (name, el) => {
-        document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active')); el.classList.add('active'); window.curExName = name; document.getElementById('curEx').innerText = name;
-        const c = window.clients.find(x => x.id === window.curID); window.lastPerfData = null; let dates = Object.keys(c.logs || {}).sort().reverse(); for(let d of dates) { let found = c.logs[d].find(l => l.name === name); if(found && found.sets && found.sets.length > 0) { window.lastPerfData = found.sets[0]; break; } }
-        const recUI = document.getElementById('historyRecall'); if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; recUI.style.display = 'flex'; } else { recUI.style.display = 'none'; } window.generateSetInputs(); document.getElementById('setForm').style.display='block'; 
+        try {
+            document.querySelectorAll('.ex-tag').forEach(e => e.classList.remove('active')); 
+            el.classList.add('active'); 
+            
+            window.curExName = name; 
+            document.getElementById('curEx').innerText = name;
+            
+            const c = window.clients.find(x => x.id === window.curID); 
+            if (!c) return; 
+            if (!c.logs) c.logs = {};
+
+            window.lastPerfData = null; 
+            let dates = Object.keys(c.logs).sort().reverse(); 
+            for(let d of dates) { 
+                if(c.logs[d] && Array.isArray(c.logs[d])) {
+                    let found = c.logs[d].find(l => l.name === name); 
+                    if(found && found.sets && found.sets.length > 0) { 
+                        window.lastPerfData = found.sets[0]; 
+                        break; 
+                    } 
+                }
+            }
+            
+            const recUI = document.getElementById('historyRecall'); 
+            if(window.lastPerfData && window.lastPerfData.w && window.lastPerfData.r) { 
+                document.getElementById('historyRecallText').innerText = `Last: ${window.lastPerfData.w}kg × ${window.lastPerfData.r}`; 
+                recUI.style.display = 'flex'; 
+            } else { 
+                recUI.style.display = 'none'; 
+            } 
+            
+            window.generateSetInputs(); 
+            document.getElementById('setForm').style.display = 'block'; 
+        } catch (error) {
+            window.showAlert("Exercise Selection Error: " + error.message);
+        }
     };
 
     window.applyProgression = (type) => {
@@ -1191,14 +2289,29 @@
 
     window.generateSetInputs = () => {
         let count = parseInt(document.getElementById('numSets').value) || 1; let htmlStr = '';
-        for(let i=1; i<=count; i++) { htmlStr += `<div class="set-row"><span class="set-label">Set ${i}</span><input type="number" step="0.5" id="inW_${i}" class="set-input" placeholder="kg"><input type="number" id="inR_${i}" class="set-input" placeholder="Reps"><input type="number" id="inRpe_${i}" class="set-input" placeholder="RPE" style="max-width:70px;"></div>`; }
+        for(let i=1; i<=count; i++) { 
+            htmlStr += `<div class="set-row">
+                <span class="set-label">Set ${i}</span>
+                <input type="number" step="0.5" id="inW_${i}" class="set-input" placeholder="kg">
+                <div style="display:flex; flex:1; gap:5px;">
+                    <input type="text" id="inR_${i}" class="set-input" placeholder="Reps" style="flex:2; margin:0;">
+                    <button class="btn-sub" style="margin:0; padding:0; flex:1; font-weight:800; color:var(--danger); border-color:var(--danger);" onclick="document.getElementById('inR_${i}').value='Failure'">F</button>
+                </div>
+                <input type="text" id="inRpe_${i}" class="set-input" placeholder="RPE" style="max-width:60px;">
+            </div>`; 
+        }
         document.getElementById('setInputsContainer').innerHTML = htmlStr;
     };
 
     window.saveExercise = async () => {
         const d = document.getElementById('logDate').value; const wName = document.getElementById('logWorkoutName').value || "General";
         let setsData = []; const count = parseInt(document.getElementById('numSets').value) || 1;
-        for(let i=1; i<=count; i++) { let w = document.getElementById(`inW_${i}`).value; let r = document.getElementById(`inR_${i}`).value; let rpe = document.getElementById(`inRpe_${i}`).value; if (w || r) setsData.push({ set: i, w, r, rpe }); }
+        for(let i=1; i<=count; i++) { 
+            let w = document.getElementById(`inW_${i}`).value; 
+            let r = document.getElementById(`inR_${i}`).value; 
+            let rpe = document.getElementById(`inRpe_${i}`).value; 
+            if (w || r) setsData.push({ set: i, w, r, rpe }); 
+        }
         if(setsData.length === 0) { window.showAlert("Enter details."); return; }
         const c = window.clients.find(x => x.id === window.curID); if(!c.logs) c.logs = {}; if(!c.logs[d]) c.logs[d] = [];
         c.logs[d].push({ id: Date.now(), workoutName: wName, name: window.curExName, sets: setsData });
@@ -1208,7 +2321,17 @@
     window.renderTonnageChart = () => {
         const c = window.clients.find(x => x.id === window.curID);
         if(window.tonnageChartInst) window.tonnageChartInst.destroy();
-        let tonnageMap = {}; Object.keys(c.logs || {}).sort().forEach(date => { let dayTotal = 0; c.logs[date].forEach(ex => { if(ex.sets) ex.sets.forEach(s => { dayTotal += (parseFloat(s.w)||0) * (parseInt(s.r)||0); }); }); if(dayTotal > 0) tonnageMap[date] = dayTotal; });
+        let tonnageMap = {}; 
+        Object.keys(c.logs || {}).sort().forEach(date => { 
+            let dayTotal = 0; 
+            c.logs[date].forEach(ex => { 
+                if(ex.sets) ex.sets.forEach(s => { 
+                    let reps = parseInt(s.r) || 0; 
+                    dayTotal += (parseFloat(s.w)||0) * reps; 
+                }); 
+            }); 
+            if(dayTotal > 0) tonnageMap[date] = dayTotal; 
+        });
         const dates = Object.keys(tonnageMap).slice(-10); const vols = dates.map(d => tonnageMap[d]);
         const style = getComputedStyle(document.body); let barColor = style.getPropertyValue('--primary').trim(); if(!barColor) barColor = '#c3f53c';
         const ctx = document.getElementById('tonnageChart').getContext('2d');
@@ -1218,133 +2341,6 @@
     window.startRestTimer = (seconds) => { if(!window.audioCtx) { try { window.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } clearInterval(window.timerInt); const ui = document.getElementById('restTimerUI'); const txt = document.getElementById('timerText'); ui.style.display = 'flex'; let left = seconds; window.timerInt = setInterval(() => { let m = Math.floor(left / 60); let s = left % 60; txt.innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; if(left <= 0) { clearInterval(window.timerInt); ui.style.background = "var(--danger)"; ui.style.color = "white"; txt.innerText = "TIME UP!"; try { if(navigator.vibrate) navigator.vibrate([500, 200, 500]); } catch(e) {} if(window.audioCtx) { try { const osc = window.audioCtx.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(800, window.audioCtx.currentTime); osc.connect(window.audioCtx.destination); osc.start(); osc.stop(window.audioCtx.currentTime + 0.5); } catch(e) {} } setTimeout(window.stopRestTimer, 5000); } left--; }, 1000); };
     window.stopRestTimer = () => { clearInterval(window.timerInt); document.getElementById('restTimerUI').style.display = 'none'; document.getElementById('restTimerUI').style.background = "#0f172a"; };
 
-    window.exportData = () => {
-        const dataStr = JSON.stringify({ trainerProfile: window.trainerProfile, clients: window.clients, shifts: window.shifts, leads: window.leads, workoutDB: window.workoutDB, expenses: window.expenses, plans: window.plans });
-        const url = URL.createObjectURL(new Blob([dataStr], { type: "application/json" }));
-        const a = document.createElement('a'); a.href = url; a.download = `RyalFit_Backup_${window.trainerProfile.name.split(' ')[0]}_${window.today}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    };
-    
-    window.importData = (event) => {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(data.clients) {
-                    window.showConfirm("Overwrite current data with backup?", async () => {
-                        if(data.trainerProfile) window.trainerProfile = data.trainerProfile; window.clients = data.clients; if(data.shifts) window.shifts = data.shifts; if(data.leads) window.leads = data.leads; if(data.workoutDB) window.workoutDB = data.workoutDB; if(data.expenses) window.expenses = data.expenses; if(data.plans) window.plans = data.plans;
-                        await window.syncToCloud(); window.showAlert("Backup loaded successfully!").then(() => location.reload());
-                    });
-                }
-            } catch(err) { window.showAlert("Invalid backup file format."); }
-            event.target.value = ""; 
-        }; reader.readAsText(file);
-    };
-
-    window.generateMonthlyReportPDF = () => {
-        let mStr = document.getElementById('reportMonthInput').value; if(!mStr) { window.showAlert("Please select a month first."); return; }
-        let clientRowsHtml = ''; let sr = 1; let totalPtEarnedThisMonth = 0;
-        window.clients.forEach(c => { let doneThisMonth = Object.keys(c.logs || {}).filter(d => d.startsWith(mStr)).length; let doneTotal = Object.keys(c.logs || {}).length; if(doneThisMonth > 0 || (c.startDate && c.startDate.startsWith(mStr))) { let remSess = Math.max(0, (c.sess || 0) - doneTotal); let amtPerSess = ((c.pay||0)/(1+(c.gst||0))*(c.ret||0))/(c.sess||1); let earnedThisMonth = amtPerSess * doneThisMonth; totalPtEarnedThisMonth += earnedThisMonth; clientRowsHtml += `<tr><td>${sr++}</td><td><b>${c.name}</b></td><td>${c.receipt || '-'}</td><td>₹${c.pay || 0}</td><td>${c.startDate || '-'}</td><td>${c.endDate || '-'}</td><td>${c.sess || 0}</td><td style="background:#3b82f6; color:white; font-weight:bold;">${doneThisMonth}</td><td>${remSess}</td><td>₹${amtPerSess.toFixed(2)}</td><td style="color:#3b82f6; font-weight:bold;">₹${earnedThisMonth.toFixed(2)}</td></tr>`; } });
-        if(clientRowsHtml === '') clientRowsHtml = `<tr><td colspan="11" style="text-align:center; padding:20px; color:#86868b;">No active client sessions recorded for this month.</td></tr>`;
-        let shiftRowsHtml = ''; let daysWorked = 0; let daysLate = 0; let daysWeekOff = 0; let daysAbsent = 0; let totalSalEarned = 0;
-        window.shifts.filter(s => s.date.startsWith(mStr)).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(s => { if(s.status === 'Present') daysWorked++; if(s.isLate) daysLate++; if(s.status === 'Week Off') daysWeekOff++; if(s.status === 'Absent') daysAbsent++; let hrs = 0; if(s.inTime && s.outTime) { let [inH, inM] = s.inTime.split(':').map(Number); let [outH, outM] = s.outTime.split(':').map(Number); hrs = ((outH * 60 + outM) - (inH * 60 + inM)) / 60; } totalSalEarned += (s.pay || 0); let statusLabel = s.status; if(s.isLate) statusLabel += ' (Late)'; if(s.isHalfDay) statusLabel += ' (Half Day)'; shiftRowsHtml += `<tr><td>${s.date}</td><td>${statusLabel}</td><td>${window.formatTime(s.inTime) || '-'}</td><td>${window.formatTime(s.outTime) || '-'}</td><td>${hrs.toFixed(1)} hrs</td><td>₹${(s.pay || 0).toFixed(2)}</td></tr>`; });
-        if(shiftRowsHtml === '') shiftRowsHtml = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#86868b;">No attendance shifts logged for this month.</td></tr>`;
-        let expRowsHtml = ''; let totalExpThisMonth = 0;
-        window.expenses.filter(e => e.date.startsWith(mStr)).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(e => { totalExpThisMonth += e.amt; expRowsHtml += `<tr><td>${e.date}</td><td><b>${e.cat}</b></td><td>${e.desc || '-'}</td><td style="color:#ef4444; font-weight:bold;">₹${e.amt.toFixed(2)}</td></tr>`; });
-        if(expRowsHtml === '') expRowsHtml = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#86868b;">No expenses logged for this month.</td></tr>`;
-        let finalNet = (totalPtEarnedThisMonth + totalSalEarned) - totalExpThisMonth;
-        let printWindow = window.open('', '_blank');
-        
-        let htmlString = '<!DOCTYPE html><html><head><title>Report - ' + mStr + '</title><style>body{font-family:sans-serif;padding:40px;color:#0f172a;font-size:13px;background:#fff;}h1{margin:0;font-size:26px;text-transform:uppercase;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #cbd5e1;padding:12px 10px;text-align:left;}th{background:#f8fafc;font-weight:800;text-transform:uppercase;font-size:10px;color:#475569;}</style></head><body>';
-        htmlString += '<div style="border-bottom:2px solid #0f172a;padding-bottom:15px;margin-bottom:30px;text-align:center;"><h1>RYAL FITHUB PRO REPORT (BY ABIS RIZVI)</h1><p style="margin-top:5px;font-weight:700;">Month: ' + mStr + ' | Trainer: ' + window.trainerProfile.name + '</p></div>';
-        htmlString += '<h2>1. Personal Training (PT) Revenue</h2><table><thead><tr><th>Sr.</th><th>Name</th><th>Receipt</th><th>Pkg ₹</th><th>Start</th><th>End</th><th>Sess.</th><th style="background:#3b82f6;color:white;">Done</th><th>Rem</th><th>Cut/Sess</th><th style="background:#3b82f6;color:white;">Earned</th></tr></thead><tbody>' + clientRowsHtml + '</tbody></table>';
-        htmlString += '<div style="text-align:right;font-weight:800;font-size:18px;margin-bottom:30px;">Total PT Revenue: <span style="color:#3b82f6;">₹' + totalPtEarnedThisMonth.toFixed(2) + '</span></div>';
-        htmlString += '<h2>2. Salary & Attendance</h2><table><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th>Amount</th></tr></thead><tbody>' + shiftRowsHtml + '</tbody></table>';
-        htmlString += '<h2>3. Expenses</h2><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>' + expRowsHtml + '</tbody></table>';
-        htmlString += '<div style="background:#f8fafc;border:1px solid #cbd5e1;padding:25px;border-radius:16px;display:flex;justify-content:space-around;text-align:center;margin-top:30px;">';
-        htmlString += '<div><div style="font-size:10px;font-weight:800;color:#64748b">SALARY</div><div style="font-size:22px;font-weight:800;">₹' + totalSalEarned.toFixed(2) + '</div></div>';
-        htmlString += '<div><div style="font-size:10px;font-weight:800;color:#64748b">PT REVENUE</div><div style="font-size:22px;font-weight:800;">₹' + totalPtEarnedThisMonth.toFixed(2) + '</div></div>';
-        htmlString += '<div><div style="font-size:10px;font-weight:800;color:#64748b">EXPENSES</div><div style="font-size:22px;font-weight:800;color:#ef4444">-₹' + totalExpThisMonth.toFixed(2) + '</div></div>';
-        htmlString += '<div><div style="font-size:10px;font-weight:800;color:#64748b">NET PROFIT</div><div style="font-size:26px;font-weight:800;color:#10b981">₹' + finalNet.toFixed(2) + '</div></div></div>';
-        htmlString += '<scr' + 'ipt>setTimeout(function(){window.print();}, 500);</scr' + 'ipt></body></html>';
-        
-        printWindow.document.write(htmlString);
-        printWindow.document.close();
-    };
-
-    window.generateProgressPDF = () => {
-        const c = window.clients.find(x => x.id === window.curID); 
-        if(!c.bca || c.bca.length < 1) { window.showAlert("You need at least 1 saved BCA log to generate a report."); return; }
-        
-        let oldest = c.bca[c.bca.length-1]; 
-        let latest = c.bca[0]; 
-        let chartData = [...c.bca].reverse(); 
-        let labels = chartData.map(b => b.date); 
-        let weightData = chartData.map(b => b.w); 
-        let smmData = chartData.map(b => b.smm); 
-        let pbfData = chartData.map(b => b.pbf); 
-        
-        let printWindow = window.open('', '_blank');
-        
-        let htmlString = '<!DOCTYPE html><html><head><title>Progress - ' + c.name + '</title>';
-        htmlString += '<style>body{font-family:sans-serif;padding:40px;background:#fff;color:#0f172a;} h1{font-size:32px;text-transform:uppercase;border-bottom:2px solid #0f172a;padding-bottom:10px;margin-bottom:5px;} .meta{font-size:13px;font-weight:700;color:#475569;margin-bottom:30px;display:flex;gap:15px;justify-content:center;} .grid{display:flex;gap:20px;margin-bottom:30px} .box{flex:1;padding:25px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:16px} h3{margin-top:0;font-size:14px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #cbd5e1;padding-bottom:10px;margin-bottom:18px} .row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:600} .val{font-weight:800}</style>';
-        htmlString += '<scr' + 'ipt src="https://cdn.jsdelivr.net/npm/chart.js"></scr' + 'ipt>';
-        htmlString += '</head><body>';
-        htmlString += '<div style="text-align:center;"><h1>' + c.name + ' (BY ABIS RIZVI)</h1><div class="meta"><span>START: ' + (c.startDate || 'N/A') + '</span></div></div>';
-        
-        htmlString += '<div class="grid"><div class="box"><h3>Before (' + oldest.date + ')</h3>';
-        htmlString += '<div class="row"><span>Weight</span><span class="val">' + (oldest.w || '-') + ' kg</span></div>';
-        htmlString += '<div class="row"><span>SMM</span><span class="val">' + (oldest.smm || '-') + ' kg</span></div>';
-        htmlString += '<div class="row"><span>PBF</span><span class="val">' + (oldest.pbf || '-') + ' %</span></div></div>';
-        
-        htmlString += '<div class="box"><h3>After (' + latest.date + ')</h3>';
-        htmlString += '<div class="row"><span>Weight</span><span class="val">' + (latest.w || '-') + ' kg</span></div>';
-        htmlString += '<div class="row"><span>SMM</span><span class="val">' + (latest.smm || '-') + ' kg</span></div>';
-        htmlString += '<div class="row"><span>PBF</span><span class="val">' + (latest.pbf || '-') + ' %</span></div></div></div>';
-        
-        htmlString += '<div style="margin-top:40px;border:1px solid #cbd5e1;padding:25px;border-radius:16px;"><canvas id="bcaChart" height="100"></canvas></div>';
-        
-        htmlString += '<scr' + 'ipt>';
-        htmlString += 'window.onload = function() {';
-        htmlString += '  const ctx = document.getElementById("bcaChart").getContext("2d");';
-        htmlString += '  new Chart(ctx, { type: "line", data: { labels: ' + JSON.stringify(labels) + ', datasets: [';
-        htmlString += '    { label: "Weight", data: ' + JSON.stringify(weightData) + ', borderColor: "#0f172a", tension: 0.4 },';
-        htmlString += '    { label: "Muscle", data: ' + JSON.stringify(smmData) + ', borderColor: "#10b981", tension: 0.4 },';
-        htmlString += '    { label: "Fat %", data: ' + JSON.stringify(pbfData) + ', borderColor: "#ef4444", tension: 0.4 }';
-        htmlString += '  ]}, options: { animation: { onComplete: () => { window.print(); } } } });';
-        htmlString += '};';
-        htmlString += '</scr' + 'ipt>';
-        htmlString += '</body></html>';
-
-        printWindow.document.write(htmlString);
-        printWindow.document.close();
-    };
-
-    window.generateVIPLink = () => {
-        const c = window.clients.find(x => x.id === window.curID); 
-        let recentEx = []; 
-        let dates = Object.keys(c.logs || {}).sort().reverse(); 
-        if(dates.length > 0) recentEx = c.logs[dates[0]].map(l => l.name).slice(0, 8); 
-        
-        let safeBca = c.bca ? c.bca.slice(0, 10) : [];
-        
-        const payload = window.encodeToHash({ 
-            n: c.name, g: c.gender || '', a: c.age || '', h: c.height || '', 
-            bca: safeBca, tdee: c.tdee || 0, macros: c.macros || null, 
-            ex: recentEx, tName: window.trainerProfile.name 
-        });
-        
-        const url = window.location.href.split('#')[0] + '#vip=' + payload; 
-        
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(url).then(() => {
-                window.showAlert("VIP Link copied! It now automatically includes YouTube video guides for their most recent workout.");
-            }).catch(err => { prompt("Copy your VIP Link here:", url); });
-        } else {
-            prompt("Copy your VIP Link here:", url);
-        }
-    };
 </script>
 </body>
 </html>
