@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
     <title>Ryal FitHub | Pro Engine</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,6 +36,27 @@
             --border: rgba(39, 39, 42, 0.6); 
             --vip: #ffffff;
         }
+        
+        /* TIGHTER UI SCALING */
+        body { font-size: 14px; } /* Keeps base text crisp */
+
+        #appContainer { padding: 0 12px 80px; } /* Tighter margins on the sides */
+
+        .section { padding: 15px; margin-bottom: 15px; border-radius: 14px; } /* Slightly smaller cards */
+
+     input, select, textarea { 
+    padding: 12px; /* Reduced from 14px */
+    font-size: 16px; /* MUST be exactly 16px to stop iOS Safari from auto-zooming */
+}
+
+button { padding: 12px; font-size: 13px; } /* Tighter buttons */
+
+/* Shrink the side menu so it doesn't consume the screen */
+#sideMenu { width: 250px; left: -270px; }
+.menu-header { padding: 30px 15px 20px; }
+.menu-header h3 { font-size: 18px; }
+.menu-links a { padding: 12px 15px; font-size: 13px; }
+
         
         body { margin:0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; padding: 0; transition: background 0.4s ease, color 0.4s ease; overflow-x: hidden; }
         
@@ -224,7 +246,7 @@
         <a onclick="showMenuSection('sec-master-routine')"><i data-feather="layers"></i> Routine Builder</a>
         <a onclick="showMenuSection('sec-library')"><i data-feather="video"></i> Video Library</a>
         <a onclick="showMenuSection('sec-research')"><i data-feather="book-open"></i> Clinical Research</a>
-        <a onclick="showMenuSection('sec-endo')"><i data-feather="activity"></i> Endo & Cycle AI</a>
+        <a onclick="showMenuSection('sec-endo')"><i data-feather="database"></i> Compound Index</a>
         <a onclick="showMenuSection('sec-support')"><i data-feather="life-buoy"></i> Platform Support</a>
         <div style="height:1px; background:var(--border); margin:15px 20px;"></div>
         <a onclick="editTrainerProfile()"><i data-feather="settings"></i> Profile Settings</a>
@@ -552,21 +574,22 @@
     
     <div class="section" id="sec-endo" style="display:none; border-left: 4px solid var(--danger);">
     <h2 onclick="toggleSec('sec-endo')">
-        <span style="display:flex; align-items:center;"><i data-feather="activity" class="icon" style="color:var(--danger); margin-right:8px;"></i> Endocrinology & Cycle AI</span>
+        <span style="display:flex; align-items:center;"><i data-feather="database" class="icon" style="color:var(--danger); margin-right:8px;"></i> Clinical Compound Index</span>
         <i data-feather="chevron-down" class="chevron"></i>
     </h2>
     <div class="collapsible" style="display:block;">
-        <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Clinical analysis for enhanced athletes. Input compounds, dosages, and recent bloodwork markers for harm-reduction protocols.</p>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:0;">Search the clinical database for highly detailed, educational profiles on performance-enhancing compounds.</p>
         
-        <input type="text" id="endoCompounds" placeholder="Current Compounds & Dosages (e.g., Test C 250mg/wk)">
-        <textarea id="endoBloodwork" rows="3" placeholder="Bloodwork issues or Side Effects (e.g., High E2, lethargy, elevated AST/ALT)..." style="resize:vertical;"></textarea>
+        <input type="text" id="endoCompoundSearch" placeholder="Enter compound name (e.g., Anavar, Trenbolone, Masteron)">
         
         <button class="btn-main" style="background:var(--danger); color:white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);" id="endoAiBtn" onclick="runEndoAI()">
-            <i data-feather="cpu" class="icon"></i> Analyze Protocol
+            <i data-feather="search" class="icon"></i> Fetch Clinical Profile
         </button>
 
         <div id="endoAiResult" style="display:none; margin-top:15px; padding:15px; background:var(--card); border:1px solid var(--danger); border-radius:12px; font-size:13px; line-height:1.6; color:var(--text);"></div>
     </div>
+</div>
+
 </div>
 
 
@@ -850,40 +873,52 @@
     window.slideInterval = null;
     window.currentSlideIdx = 0;
     
-    // SAFE ICON RENDERER
+// DEBOUNCED SAFE ICON RENDERER
+    let iconTimeout = null;
     window.updateIcons = () => {
-        if(window.feather) {
-            try { window.feather.replace(); } 
-            catch(e) { /* Silently catch DOM race conditions */ }
-    }
+        if(!window.feather) return;
+    
+    // Clear any pending icon renders to prevent duplicates
+    clearTimeout(iconTimeout);
+    
+    // Wait 50ms for the DOM to completely finish injecting HTML, then render icons once
+    iconTimeout = setTimeout(() => {
+        try { 
+            window.feather.replace(); 
+        } catch(e) { 
+            console.warn("Feather rendering skipped a frame to prevent crash."); 
+        }
+    }, 50); 
 };
+
 
     window.runEndoAI = async () => {
     const apiKey = localStorage.getItem('ryal_ai_key');
     if(!apiKey) { window.showAlert("Please add your Gemini API Key in Profile Settings!"); return; }
     
-    const compounds = document.getElementById('endoCompounds').value;
-    const bloodwork = document.getElementById('endoBloodwork').value;
-    
-    if(!compounds && !bloodwork) { window.showAlert("Provide compounds or bloodwork details first."); return; }
+    const compound = document.getElementById('endoCompoundSearch').value.trim();
+    if(!compound) { window.showAlert("Please enter a compound name first."); return; }
 
     const btn = document.getElementById('endoAiBtn');
     const resBox = document.getElementById('endoAiResult');
     const oldHtml = btn.innerHTML;
     
-    btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i> Analyzing...`;
+    btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i> Fetching Data...`;
     resBox.style.display = 'none';
     window.updateIcons();
 
-    const prompt = `You are an elite sports endocrinologist and clinical harm-reduction specialist for bodybuilders. Review the following enhanced athlete data.
-    Current Protocol: ${compounds || 'None specified'}
-    Reported Symptoms/Bloodwork: ${bloodwork || 'None specified'}
+    // Re-engineered prompt for educational, encyclopedia-style output
+    const prompt = `You are an elite sports pharmacologist and clinical educator. Provide a comprehensive, purely informational clinical profile for the following performance-enhancing compound: "${compound}".
     
-    Provide a highly clinical, 3-step actionable brief covering:
-    1. Potential interactions/causes of the side effects based on the compounds.
-    2. Over-the-counter supplementation or health protocols to mitigate organ stress (Liver, Kidney, Lipid panel).
-    3. Suggested adjustments to dosage or administration frequency for stability.
-    Do not use markdown asterisks. Use plain HTML like <br> and <b> for formatting. Keep it concise.`;
+    Format the response clearly using ONLY plain HTML tags (like <b>, <br>, <ul>, <li>) and absolutely NO markdown asterisks. Cover the following sections strictly in order:
+    1. Clinical Overview (What it is, half-life, anabolic/androgenic ratio)
+    2. Detailed Pros (Physiological benefits, cosmetic effects)
+    3. Detailed Cons & Risks (Side effects, organ stress, toxicity)
+    4. Common Clinical Dosages (Beginner, Intermediate, Advanced ranges)
+    5. Best Used With (Synergistic compounds, common stack pairings)
+    6. Professional Consensus (What elite coaches/clinicians say about its risk-to-reward ratio and specific use cases).
+    
+    Disclaimer: Maintain an objective, educational, harm-reduction tone. Do not advise the user to start a cycle.`;
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -895,15 +930,18 @@
         if(data.error) throw new Error(data.error.message);
         
         let reply = data.candidates[0].content.parts[0].text;
-        resBox.innerHTML = `<b style="color:var(--danger); display:block; margin-bottom:8px;">AI CLINICAL REPORT</b>` + reply;
+        
+        // Formats the header and injects the AI response
+        resBox.innerHTML = `<b style="color:var(--danger); display:block; margin-bottom:12px; font-size:16px; font-family:'Oswald', sans-serif; letter-spacing:0.5px;">CLINICAL PROFILE: ${compound.toUpperCase()}</b>` + reply;
         resBox.style.display = 'block';
     } catch(e) {
-        window.showAlert("AI Engine Failed: " + e.message);
+        window.showAlert("Database Fetch Failed: " + e.message);
     } finally {
         btn.innerHTML = oldHtml;
         window.updateIcons();
     }
 };
+
 
 
     // Run feather icons
