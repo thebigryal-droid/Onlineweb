@@ -921,13 +921,15 @@ button { padding: 12px; font-size: 13px; } /* Tighter buttons */
     Disclaimer: Maintain an objective, educational, harm-reduction tone. Do not advise the user to start a cycle.`;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 100, temperature: 0.2 } 
-})
+                body: JSON.stringify({ 
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { maxOutputTokens: 100, temperature: 0.2 } 
+                })
+            });
+
 
         });
         const data = await response.json();
@@ -1712,22 +1714,54 @@ button { padding: 12px; font-size: 13px; } /* Tighter buttons */
 
     window.delLead = (id) => { window.showConfirm("Delete this lead permanently?", async () => { window.leads = window.leads.filter(l => l.id !== id); await window.syncToCloud(); window.render(); }); };
 
-    window.logAtt = async (status) => {
-        const d = document.getElementById('attDate').value; const inT = document.getElementById('attIn').value; const outT = document.getElementById('attOut').value;
-        const [inH, inM] = inT.split(':').map(Number); const [outH, outM] = outT.split(':').map(Number); const totalMins = (outH * 60 + outM) - (inH * 60 + inM);
-        let isLate = false; let isHalfDay = false;
-        if (status === 'Present' && totalMins > 0) { if (totalMins <= 240) isHalfDay = true; else if (totalMins < 420) isLate = true; }
+        window.logAtt = async (status) => {
+        const d = document.getElementById('attDate').value; 
+        const inT = document.getElementById('attIn').value; 
+        const outT = document.getElementById('attOut').value;
+        
+        const [inH, inM] = inT.split(':').map(Number); 
+        const [outH, outM] = outT.split(':').map(Number); 
+        let totalMins = (outH * 60 + outM) - (inH * 60 + inM);
+        if (totalMins < 0) totalMins += 24 * 60; // Handles overnight shifts
+
+        // Calculate expected shift duration from profile
+        const shiftIn = window.trainerProfile.shiftIn || "07:00";
+        const shiftOut = window.trainerProfile.shiftOut || "13:00";
+        const [sInH, sInM] = shiftIn.split(':').map(Number);
+        const [sOutH, sOutM] = shiftOut.split(':').map(Number);
+        let shiftTotalMins = (sOutH * 60 + sOutM) - (sInH * 60 + sInM);
+        if (shiftTotalMins <= 0) shiftTotalMins += 24 * 60;
+
+        let isLate = false; 
+        let isHalfDay = false;
+
+        if (status === 'Present' && totalMins > 0) { 
+            // Half Day: Worked 50% or less of the required shift duration
+            if (totalMins <= (shiftTotalMins / 2) + 10) { 
+                isHalfDay = true; 
+            } 
+            // Late: Clocked in >10 mins late AND did not complete full shift hours (with 10 min buffer)
+            else {
+                const actualInMins = inH * 60 + inM;
+                const targetInMins = sInH * 60 + sInM;
+                const clockedInLate = actualInMins > (targetInMins + 10); // 10 min grace period
+                const shortOnHours = totalMins < (shiftTotalMins - 10); // Check if they worked full duration
+
+                if (clockedInLate && shortOnHours) {
+                    isLate = true;
+                }
+            }
+        }
         
         const dailyRate = (window.trainerProfile.salary || 10000) / new Date(parseInt(d.split('-')[0]), parseInt(d.split('-')[1]), 0).getDate();
         
         let actualPay = (status === 'Present' || status === 'Week Off') ? dailyRate : 0;
-        if (status === 'Present' && (isLate || isHalfDay)) {
-            actualPay = dailyRate * 0.5; 
-        }
         
-        window.shifts.push({ id: Date.now(), date: d, inTime: inT, outTime: outT, status, isLate, isHalfDay, pay: actualPay });
-        await window.syncToCloud(); window.render();
+        window.shifts.push({ id: Date.now(), date: d, inTime: inT, outTime: outT, status, isLate, isHalfDay, pay: actualPay, baseDaily: dailyRate });
+        await window.syncToCloud(); 
+        window.render();
     };
+
 
     window.delShift = (id) => { window.showConfirm("Delete this shift record?", async () => { window.shifts = window.shifts.filter(s => s.id !== id); await window.syncToCloud(); window.render(); }); };
 
@@ -4093,21 +4127,37 @@ The attendance logic seems kinda messed up like when even when completed 6 hour'
         document.getElementById('rosterView').innerHTML = rosterHtml;
     };
 
-    window.renderRevenue = () => {
+        window.renderRevenue = () => {
         let mData = {}; let todayRev = 0;
-        window.shifts.forEach(s => { 
-            let m=s.date.slice(0,7); 
-            if(!mData[m]) mData[m]={sal:0,pt:0,pen:0, exp:0, daily:{}}; 
+
+        // Sort chronologically so Lates are counted in exact order
+        let sortedShifts = [...window.shifts].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        sortedShifts.forEach(s => { 
+            let m = s.date.slice(0,7); 
+            if(!mData[m]) mData[m]={sal:0, pt:0, pen:0, exp:0, daily:{}, lateCount:0}; 
             
-            let dailyRate = (window.trainerProfile.salary || 10000) / new Date(parseInt(s.date.split('-')[0]), parseInt(s.date.split('-')[1]), 0).getDate(); 
-            let actualPay = s.pay || 0;
+            let dailyRate = s.baseDaily || ((window.trainerProfile.salary || 10000) / new Date(parseInt(s.date.split('-')[0]), parseInt(s.date.split('-')[1]), 0).getDate()); 
+            let actualPay = 0;
             let penaltyAmount = 0;
 
-            if ((s.isLate || s.isHalfDay) && actualPay >= dailyRate - 1) {
-                actualPay = dailyRate * 0.5;
-                penaltyAmount = dailyRate * 0.5;
-            } else if (actualPay < dailyRate && (s.status === 'Present' || s.status === 'Week Off')) {
-                penaltyAmount = dailyRate - actualPay;
+            if (s.status === 'Present' || s.status === 'Week Off') {
+                actualPay = dailyRate;
+                if (s.status === 'Present') {
+                    if (s.isHalfDay) {
+                        actualPay = dailyRate * 0.5;
+                        penaltyAmount = dailyRate * 0.5;
+                    } else if (s.isLate) {
+                        mData[m].lateCount++;
+                        // DEDUCTS 50% PAY ONLY ON EVERY 3rd LATE
+                        if (mData[m].lateCount % 3 === 0) {
+                            actualPay = dailyRate * 0.5;
+                            penaltyAmount = dailyRate * 0.5;
+                        }
+                    }
+                }
+            } else {
+                penaltyAmount = dailyRate; // Absent 
             }
 
             mData[m].sal += actualPay; 
@@ -4128,22 +4178,24 @@ The attendance logic seems kinda messed up like when even when completed 6 hour'
             let net = mData[m].sal + mData[m].pt - mData[m].exp; 
             let dailyHtml = ""; let sortedDays = Object.keys(mData[m].daily).sort().reverse(); 
             if(sortedDays.length > 0) { 
-                dailyHtml = `<div style="margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;"><div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Daily Breakdown (Excl. Expenses)</div>`; 
+                dailyHtml = `<div style="margin-top:15px; border-top:1px dashed var(--border); padding-top:15px;"><div style="font-size:11px; font-weight:800; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Daily Breakdown</div>`; 
                 sortedDays.forEach(d => { 
-                    let dayData = mData[m].daily[d]; 
-                    let dayNet = dayData.sal + dayData.pt; 
-                    dailyHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px solid var(--bg);"><span style="font-weight:600;"><i data-feather="calendar" class="icon" style="color:var(--text-muted);"></i> <span style="color:var(--text);">${d}</span></span><span style="font-weight:800; color:${dayNet < 0 ? 'var(--danger)' : 'var(--text)'};">₹${dayNet.toFixed(0)}</span></div>`; 
-                }); 
-                dailyHtml += `</div>`; 
+                    let dayNet = mData[m].daily[d].sal + mData[m].daily[d].pt; 
+                    dailyHtml += `<div style="display:flex; justify-content:space-between; font-size:12px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.05);"><span style="font-weight:600;"><i data-feather="calendar" class="icon" style="color:var(--text-muted);"></i> <span style="color:var(--text);">${d}</span></span><span style="font-weight:800; color:${dayNet < 0 ? 'var(--danger)' : 'var(--text)'};">₹${dayNet.toFixed(0)}</span></div>`; 
+                }); dailyHtml += `</div>`; 
             } 
             let grossSal = mData[m].sal + mData[m].pen;
-            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.02);" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:10px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:var(--bg); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> GROSS SAL: <b style="color:var(--text);">₹${grossSal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
+            revHtml += `<div style="background:var(--card); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; padding:0 15px; transition:transform 0.2s;"><div class="rev-month" onclick="toggleGroup('rev-split-${m}', this)" style="cursor:pointer; border-bottom:none; margin-top:0; padding:15px 0;"><span style="display:flex; align-items:center; gap:10px;"><i data-feather="calendar" class="icon" style="color:var(--text-muted); width:18px; height:18px;"></i> ${m}</span><div style="display:flex; align-items:center; gap:10px;"><span style="color:${net<0?'var(--danger)':'var(--primary)'}; font-size:18px;">₹${net.toFixed(0)}</span><i data-feather="chevron-down" class="icon" style="color:var(--text-muted); transition:0.3s;"></i></div></div><div id="rev-split-${m}" class="rev-split" style="display:none; padding-bottom:15px; border-top:1px solid var(--border); margin-top:0; padding-top:15px; flex-direction:column;"><div style="display:flex; gap:15px; flex-wrap:wrap; background:rgba(0,0,0,0.1); padding:12px; border-radius:10px;"><span><i data-feather="dollar-sign" class="icon" style="color:var(--text-muted);"></i> GROSS SAL: <b style="color:var(--text);">₹${grossSal.toFixed(0)}</b></span><span><i data-feather="users" class="icon" style="color:var(--text-muted);"></i> PT: <b style="color:var(--text);">₹${mData[m].pt.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="alert-circle" class="icon"></i> PEN: <b>-₹${mData[m].pen.toFixed(0)}</b></span><span style="color:var(--danger)"><i data-feather="credit-card" class="icon"></i> EXP: <b>-₹${mData[m].exp.toFixed(0)}</b></span></div>${dailyHtml}</div></div>`; 
         });
-        document.getElementById('revView').innerHTML = revHtml || "<div style='font-size:13px; color:var(--text-muted); text-align:center; padding:10px;'>No financial data yet.</div>";
+        document.getElementById('revView').innerHTML = revHtml || `<div style='text-align:center; padding:30px 10px; opacity:0.6;'><i data-feather='pie-chart' style='width:32px; height:32px; color:var(--text-muted); margin-bottom:10px;'></i><div style='font-size:13px; color:var(--text-muted); font-weight:600;'>No financial data logged.</div></div>`;
         document.getElementById('statRevenue').innerText = `₹${todayRev.toFixed(0)}`;
         document.getElementById('statSessions').innerText = window.clients.reduce((count, c) => count + (c.logs && c.logs[window.today] && c.logs[window.today].length > 0 ? 1 : 0), 0);
         document.getElementById('statShift').innerText = window.shifts.find(x => x.date === window.today)?.status || "-";
+        
+        // Refresh icons safely
+        if(window.feather) setTimeout(() => feather.replace(), 50);
     };
+
 
     window.showAlert = (msg) => {
         return new Promise(resolve => {
@@ -5164,4 +5216,3 @@ The attendance logic seems kinda messed up like when even when completed 6 hour'
 </script>
 </body>
 </html>
-
