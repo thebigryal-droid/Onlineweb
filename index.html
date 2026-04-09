@@ -124,6 +124,15 @@
         .chat-input-area { padding: 15px; background: var(--card); border-top: 1px solid var(--border); display: flex; gap: 10px; }
 
         /* --- APP CORE UI --- */
+        #clientOverlay { display:none; position:fixed; inset:0; background:var(--bg); z-index:80000; padding:20px; overflow-y:auto; }
+        
+        /* Print formatting (Hides the website, prints only the bill) */
+        @media print {
+            body * { visibility: hidden; }
+            #ryalPrintArea, #ryalPrintArea * { visibility: visible; }
+            #ryalPrintArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; color: black; background: white; }
+        }
+
         #appContainer { padding: 0 15px 100px; }
         .section { padding: 18px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; transition: 0.3s; }
         .section h2 { font-size: 12px; text-transform: uppercase; color: var(--text); display: flex; justify-content: space-between; cursor: pointer; margin: 0; font-weight: 800; align-items: center; }
@@ -1135,8 +1144,61 @@
     window.renderMobility = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('mobList').innerHTML=c.mobility.map(l=>`<div class="history-row" style="font-size:12px; background:var(--card); padding:10px; border-radius:10px; margin-bottom:5px;"><span><b>${l.muscle}</b>: ${l.exercise}<br><span style="color:var(--text-muted);font-size:10px;">${l.time}s x ${l.sets} sets | ${l.date}</span></span><button class="btn-action danger" onclick="delMobility(${l.id})"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('mobList').style.display=c.mobility.length?'block':'none'; window.updateIcons(); };
     window.delMobility = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.mobility=c.mobility.filter(l=>l.id!==id); window.syncToCloud().then(window.renderMobility); };
 
-    window.generateProgressPDF = () => { setTimeout(()=>window.print(), 500); };
-    window.generateMonthlyReportPDF = () => { setTimeout(()=>window.print(), 500); };
+    // --- RESTORED: PRINTABLE BILL / REPORT GENERATOR ---
+    window.generateProgressPDF = () => { 
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+        
+        let bcaHtml = c.bca && c.bca.length ? `${c.bca[0].w}kg (Fat: ${c.bca[0].pbf}%)` : "No data logged.";
+        let macroHtml = c.macros ? `${c.macros.p}g Pro | ${c.macros.c}g Carb | ${c.macros.f}g Fat` : "Not generated.";
+        let recentLogs = Object.keys(c.logs || {}).sort().reverse().slice(0, 5).map(d => `<li style="padding:8px 0;border-bottom:1px solid #eee;"><strong>${d}:</strong> ${c.logs[d].map(l=>l.name).join(', ')}</li>`).join('');
+
+        const printDiv = document.createElement('div');
+        printDiv.id = 'ryalPrintArea';
+        printDiv.innerHTML = `
+            <div style="font-family: 'Helvetica Neue', sans-serif; color: #000; max-width: 800px; margin: 0 auto;">
+                <h1 style="border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase;">Clinical Progress Report</h1>
+                <p><strong>Trainer:</strong> ${window.trainerProfile.name}</p>
+                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="margin-top:0;">Client: ${c.name}</h2>
+                    <p><strong>Goal:</strong> ${c.goal || 'N/A'} | <strong>Age:</strong> ${c.age || 'N/A'} | <strong>Phone:</strong> ${c.phone || 'N/A'}</p>
+                    <p><strong>Current Stats:</strong> ${bcaHtml}</p>
+                    <p><strong>Prescribed Macros:</strong> ${macroHtml}</p>
+                </div>
+                <h3>Recent Activity Log</h3>
+                <ul style="list-style:none; padding:0;">${recentLogs || "<li>No workouts logged yet.</li>"}</ul>
+                <p style="text-align:center; font-size:12px; margin-top:40px; color:#666;">Generated securely via Ryal FitHub Cloud</p>
+            </div>
+        `;
+        document.body.appendChild(printDiv);
+        window.print();
+        setTimeout(() => document.body.removeChild(printDiv), 1000);
+    };
+
+    window.generateMonthlyReportPDF = () => { 
+        const month = document.getElementById('reportMonthInput').value;
+        const totalEarned = document.getElementById('statRevenue').innerText;
+        const totalSess = document.getElementById('statSessions').innerText;
+
+        const printDiv = document.createElement('div');
+        printDiv.id = 'ryalPrintArea';
+        printDiv.innerHTML = `
+            <div style="font-family: 'Helvetica Neue', sans-serif; color: #000; max-width: 800px; margin: 0 auto;">
+                <h1 style="border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase;">Revenue & Activity Statement</h1>
+                <p><strong>Trainer:</strong> ${window.trainerProfile.name}</p>
+                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h2 style="margin-top:0;">Period: ${month || window.today.slice(0,7)}</h2>
+                    <p><strong>Current Day Revenue:</strong> ${totalEarned}</p>
+                    <p><strong>Current Day Sessions:</strong> ${totalSess}</p>
+                </div>
+                <p style="text-align:center; font-size:12px; margin-top:40px; color:#666;">Generated securely via Ryal FitHub Cloud</p>
+            </div>
+        `;
+        document.body.appendChild(printDiv);
+        window.print();
+        setTimeout(() => document.body.removeChild(printDiv), 1000);
+    };
+
 
     // --- 17. VIP PORTAL DASHBOARD ---
     window.loginVIP = async () => { const id=document.getElementById('vipIdInput').value; document.getElementById('cloudLoader').style.display='flex'; try{ const snap=await getDoc(doc(db, "vip_portals", id)); if(snap.exists()){ window.vipDataStore=snap.data(); document.getElementById('vipLoginBox').style.display='none'; document.getElementById('vipDashboard').style.display='block'; window.renderLiveVIP(); } else { window.showAlert("Invalid Client ID"); } }catch(e){} document.getElementById('cloudLoader').style.display='none'; };
