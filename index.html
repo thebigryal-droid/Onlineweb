@@ -293,14 +293,20 @@
     
     <div class="section active"><h2><span><i data-feather="bar-chart-2" style="color:var(--info);margin-right:8px;"></i> Volume Analytics</span></h2><div style="background:rgba(0,0,0,0.1);border-radius:12px;padding:15px;margin-top:15px;"><canvas id="tonnageChart" height="150"></canvas></div></div>
     
-    <div class="section active">
+        <div class="section active">
         <h2><span><i data-feather="image" style="color:var(--info);margin-right:8px;"></i> Physique Timeline</span></h2>
         <div style="margin-top:15px;">
-            <div style="display:flex; gap:10px; margin-bottom:15px;"><input type="date" id="gallerySearchDate" onchange="searchGalleryByDate(this.value)" style="flex:2;"><button class="btn-info" onclick="startSlideshow()" style="flex:1;">Play Auto</button></div>
-            <div style="position:relative;"><input type="file" id="galleryUpload" accept="image/*" style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;" onchange="uploadToGallery(event)"><button class="btn-sub" style="width:100%;border-style:dashed;"><i data-feather="camera"></i> Upload Photo</button></div>
-            <div id="galleryGrid" class="gallery-grid"></div>
+            <input type="date" id="gallerySearchDate" placeholder="Search by Date" onchange="searchGalleryByDate(this.value)" style="margin-bottom:15px;">
+            
+            <div style="position:relative; margin-bottom:15px;">
+                <input type="file" id="galleryUpload" accept="image/*" style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;z-index:10;" onchange="uploadToGallery(event)">
+                <button class="btn-sub" style="width:100%;border-style:dashed;"><i data-feather="camera"></i> Upload Photo</button>
+            </div>
+            
+            <div id="galleryGrid" class="gallery-grid" style="-ms-overflow-style:none; scrollbar-width:none;"></div>
         </div>
     </div>
+
     
     <div class="section active">
         <h2><span><i data-feather="zap" style="color:var(--warning);margin-right:8px;"></i> Record Workout</span></h2>
@@ -562,12 +568,57 @@
 
     // --- RESTORED: TIMELINE GALLERY & SLIDESHOW ---
     window.uploadToGallery = (e) => { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ const i=new Image(); i.onload=async function(){ const cv=document.createElement('canvas'); cv.width=300; cv.height=i.height*(300/i.width); cv.getContext('2d').drawImage(i,0,0,cv.width,cv.height); const c=window.clients.find(x=>x.id===window.curID); c.gallery.push({id:Date.now(), date:document.getElementById('gallerySearchDate').value||window.today, img:cv.toDataURL('image/jpeg',0.6)}); c.gallery.sort((a,b)=>new Date(b.date)-new Date(a.date)); await window.syncToCloud(); window.renderGallery(); }; i.src=ev.target.result; }; r.readAsDataURL(f); };
-    window.renderGallery = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('galleryGrid').innerHTML=c.gallery.map((p,i)=>`<div class="gallery-item"><img src="${p.img}" class="gallery-img" onclick="startSlideshow(${i})" style="cursor:pointer;"><div class="gallery-date">${p.date}</div><button class="gallery-del" onclick="delGalleryPhoto(${p.id})"><i data-feather="x" style="width:14px;color:white;"></i></button></div>`).join(''); window.updateIcons(); };
+        // --- NEW AUTOMATIC CAROUSEL LOGIC ---
+    window.galleryScrollDirection = 1;
+    window.galleryAutoScroller = null;
+
+    window.renderGallery = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        const grid = document.getElementById('galleryGrid');
+        
+        if(!c.gallery || c.gallery.length === 0) { 
+            grid.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; width:100%;">No photos uploaded yet.</div>`; 
+            if (window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
+            return; 
+        }
+        
+        let htmlStr = "";
+        c.gallery.forEach((p) => {
+            htmlStr += `<div class="gallery-item" style="animation: fadeIn 0.4s ease forwards;">
+                <img src="${p.img}" class="gallery-img" style="pointer-events:none;">
+                <div class="gallery-date">${p.date}</div>
+                <button class="gallery-del" onclick="delGalleryPhoto(${p.id})"><i data-feather="x" style="width:14px;color:white;"></i></button>
+            </div>`;
+        });
+        grid.innerHTML = htmlStr; 
+        
+        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+
+        // Start the Auto-Scroller Engine
+        if(window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
+        
+        window.galleryAutoScroller = setInterval(() => {
+            if (!grid || grid.children.length < 2) return;
+            
+            // Check if we hit the far right edge
+            if (grid.scrollLeft >= (grid.scrollWidth - grid.clientWidth - 5)) {
+                window.galleryScrollDirection = -1; // Reverse left
+            } 
+            // Check if we hit the starting left edge
+            else if (grid.scrollLeft <= 0) {
+                window.galleryScrollDirection = 1; // Move right
+            }
+            
+            // Slide by 145 pixels (roughly one image + gap)
+            grid.scrollBy({ left: 145 * window.galleryScrollDirection, behavior: 'smooth' });
+        }, 2500);
+    };
+
     window.delGalleryPhoto = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.gallery=c.gallery.filter(p=>p.id!==id); window.syncToCloud().then(window.renderGallery); };
-    window.startSlideshow = (idx) => { const c=window.clients.find(x=>x.id===window.curID); if(!c.gallery.length) return; window.currentSlideIdx = idx!==undefined?idx:0; document.getElementById('slideshowModal').style.display='flex'; window.updateSlide(); clearInterval(window.slideInterval); window.slideInterval=setInterval(window.nextSlide, 2500); };
-    window.updateSlide = () => { const p=window.clients.find(x=>x.id===window.curID).gallery[window.currentSlideIdx]; document.getElementById('slideImg').src=p.img; document.getElementById('slideDate').innerText=p.date; };
-    window.nextSlide = () => { const c=window.clients.find(x=>x.id===window.curID); window.currentSlideIdx++; if(window.currentSlideIdx>=c.gallery.length) window.currentSlideIdx=0; window.updateSlide(); };
-    window.closeSlideshow = () => { clearInterval(window.slideInterval); document.getElementById('slideshowModal').style.display='none'; };
+    //window.startSlideshow = (idx) => { const c=window.clients.find(x=>x.id===window.curID); if(!c.gallery.length) return; window.currentSlideIdx = idx!==undefined?idx:0; document.getElementById('slideshowModal').style.display='flex'; window.updateSlide(); clearInterval(window.slideInterval); window.slideInterval=setInterval(window.nextSlide, 2500); };
+    //window.updateSlide = () => { const p=window.clients.find(x=>x.id===window.curID).gallery[window.currentSlideIdx]; document.getElementById('slideImg').src=p.img; document.getElementById('slideDate').innerText=p.date; };
+    //window.nextSlide = () => { const c=window.clients.find(x=>x.id===window.curID); window.currentSlideIdx++; if(window.currentSlideIdx>=c.gallery.length) window.currentSlideIdx=0; window.updateSlide(); };
+    //window.closeSlideshow = () => { clearInterval(window.slideInterval); document.getElementById('slideshowModal').style.display='none'; };
     window.searchGalleryByDate = (d) => { const c=window.clients.find(x=>x.id===window.curID); const idx=c.gallery.findIndex(p=>p.date===d); if(idx!==-1) window.startSlideshow(idx); };
 
     // --- RESTORED: CARDIO & MOBILITY ---
