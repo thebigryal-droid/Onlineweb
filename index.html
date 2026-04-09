@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <link rel="apple-touch-icon" href="icon.png">
     <style>
         :root{--primary:#c3f53c;--primary-dark:#a2d620;--bg:#f4f5f7;--card:rgba(255,255,255,0.7);--text:#0f172a;--text-muted:#64748b;--border:rgba(226,232,240,0.6);--danger:#ef4444;--info:#3b82f6;--warning:#f59e0b;--vip:#0f172a;}
         body.dark-mode{--bg:#09090b;--card:rgba(20,20,23,0.6);--text:#f8fafc;--text-muted:#94a3b8;--border:rgba(39,39,42,0.6);--vip:#ffffff;}
@@ -15,6 +18,7 @@
         #appContainer{padding:0 12px 80px;}
         .section{padding:15px;margin-bottom:15px;border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);transition:transform .3s,box-shadow .3s;}
         .section:hover{box-shadow:0 8px 30px rgba(0,0,0,0.06);}
+        /* iOS ZOOM FIX */
         input,select,textarea{padding:12px;font-size:16px !important;width:100%;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;box-sizing:border-box;background:rgba(0,0,0,0.1);color:var(--text);outline:none;transition:all .3s;}
         body:not(.dark-mode) input,body:not(.dark-mode) select,body:not(.dark-mode) textarea{background:rgba(255,255,255,0.5);}
         input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(195,245,60,0.15);}
@@ -64,12 +68,63 @@
         .badge{font-size:9px;padding:4px 8px;border-radius:6px;font-weight:800;margin-left:8px;text-transform:uppercase;}
         .badge.warning{background:rgba(245,158,11,0.1);color:var(--warning);} .badge.danger{background:rgba(239,68,68,0.1);color:var(--danger);} .badge.info{background:rgba(59,130,246,0.1);color:var(--info);}
         #restTimerUI{display:none;position:fixed;bottom:20px;right:20px;background:var(--text);color:var(--bg);padding:14px 24px;border-radius:30px;font-size:20px;font-weight:800;z-index:9999;align-items:center;gap:12px;border:1px solid rgba(255,255,255,0.1);}
-        .gallery-grid { display: flex; gap: 15px; overflow-x: auto; padding: 15px 0; -ms-overflow-style: none; scrollbar-width: none; }
-        .gallery-item { flex: 0 0 130px; position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
-        .gallery-img { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; }
-        .gallery-date { font-size: 10px; font-weight: 800; color: var(--text-muted); text-align: center; margin-top: 8px; }
-        .gallery-del { position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         @keyframes spin{100%{transform:rotate(360deg);}} @keyframes fadeIn{from{opacity:0;}to{opacity:1;}} @keyframes gradientBG{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+    /* --- PHYSIQUE TIMELINE CAROUSEL CSS --- */
+    .gallery-grid { 
+        display: flex; 
+        flex-wrap: nowrap; /* Forces images into a single horizontal line */
+        gap: 15px; 
+        overflow-x: auto; /* Enables horizontal scrolling */
+        padding: 15px 0; 
+        -ms-overflow-style: none; /* Hides scrollbar IE/Edge */
+        scrollbar-width: none; /* Hides scrollbar Firefox */
+        scroll-behavior: smooth;
+        }
+        /* Hides scrollbar for Chrome/Safari/Webkit */
+        .gallery-grid::-webkit-scrollbar { 
+            display: none; 
+        } 
+        
+        .gallery-item { 
+            flex: 0 0 130px; /* Locks the width of each photo card */
+            position: relative; 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 6px; 
+        }
+        
+        .gallery-img { 
+            width: 100%; 
+            height: 130px; 
+            object-fit: cover; /* Prevents images from stretching weirdly */
+            border-radius: 8px; 
+        }
+        
+        .gallery-date { 
+            font-size: 10px; 
+            font-weight: 800; 
+            color: var(--text-muted); 
+            text-align: center; 
+            margin-top: 8px; 
+        }
+        
+        .gallery-del { 
+            position: absolute; 
+            top: -10px; 
+            right: -10px; 
+            background: var(--danger); 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 28px; 
+            height: 28px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
     </style>
 </head>
 <body id="mainBody" class="dark-mode">
@@ -268,6 +323,17 @@
     </div>
     
     <div class="section active" id="scoutEngine" style="display:none; border-left:4px solid var(--primary);"><h4 style="margin:0 0 12px 0; font-size:12px; font-weight:800;"><i data-feather="check-circle" style="color:var(--primary);"></i> Clinical Protocol</h4><div id="ovScout"></div></div>
+    
+        <div class="section active" style="border-left:4px solid #8b5cf6;">
+        <h2><span><i data-feather="cpu" style="color:#8b5cf6;margin-right:8px;"></i> AI Plateau Analyst</span></h2>
+        <div style="margin-top:15px;">
+            <button class="btn-main" style="background:#8b5cf6;color:white;" onclick="runPlateauAI()">Analyze Client Progress</button>
+            <div id="aiThinking" style="display:none; margin-top:15px; color:var(--text-muted); font-size:12px; text-align:center;"><i data-feather="loader" style="animation:spin 1s linear infinite;"></i> Analyzing biometric trends...</div>
+            <div id="aiResultText" style="display:none; margin-top:15px; background:rgba(0,0,0,0.1); padding:15px; border-radius:12px; font-size:13px; line-height:1.6; border:1px solid #8b5cf6;"></div>
+        </div>
+    </div>
+
+    
 
     <div class="section active" style="border-left:4px solid #10b981;">
         <h2><span><i data-feather="wind" style="color:#10b981;margin-right:8px;"></i> Flexibility & Mobility</span></h2>
@@ -292,19 +358,31 @@
         </div>
     </div>
     
-    <div class="section active"><h2><span><i data-feather="bar-chart-2" style="color:var(--info);margin-right:8px;"></i> Volume Analytics</span></h2><div style="background:rgba(0,0,0,0.1);border-radius:12px;padding:15px;margin-top:15px;"><canvas id="tonnageChart" height="150"></canvas></div></div>
-    
     <div class="section active">
+        <h2><span><i data-feather="bar-chart-2" style="color:var(--info);margin-right:8px;"></i> Volume Analytics</span></h2>
+        <div style="background:var(--card); border-radius:12px; padding:15px; margin-top:15px; border:1px solid var(--border); position: relative;">
+            <div id="tonnageNoData" style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">
+                No volume data logged yet. Log exercises with weight & reps to see progress.
+            </div>
+            <canvas id="tonnageChart" height="150" style="display:none;"></canvas>
+        </div>
+    </div>
+
+    
+        <div class="section active">
         <h2><span><i data-feather="image" style="color:var(--info);margin-right:8px;"></i> Physique Timeline</span></h2>
         <div style="margin-top:15px;">
-            <input type="date" id="gallerySearchDate" style="margin-bottom:15px;">
+            <input type="date" id="gallerySearchDate" placeholder="Search by Date" onchange="searchGalleryByDate(this.value)" style="margin-bottom:15px;">
+            
             <div style="position:relative; margin-bottom:15px;">
                 <input type="file" id="galleryUpload" accept="image/*" style="opacity:0;position:absolute;top:0;left:0;width:100%;height:100%;cursor:pointer;z-index:10;" onchange="uploadToGallery(event)">
                 <button class="btn-sub" style="width:100%;border-style:dashed;"><i data-feather="camera"></i> Upload Photo</button>
             </div>
-            <div id="galleryGrid" class="gallery-grid"></div>
+            
+            <div id="galleryGrid" class="gallery-grid" style="-ms-overflow-style:none; scrollbar-width:none;"></div>
         </div>
     </div>
+
     
     <div class="section active">
         <h2><span><i data-feather="zap" style="color:var(--warning);margin-right:8px;"></i> Record Workout</span></h2>
@@ -332,6 +410,12 @@
 </div>
 
 <div id="restTimerUI"><i data-feather="clock"></i> <span id="timerText">01:30</span><button onclick="stopRestTimer()" style="background:none;border:none;color:var(--danger);display:flex;"><i data-feather="x-circle"></i></button></div>
+
+<div id="slideshowModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:60000;align-items:center;justify-content:center;flex-direction:column;backdrop-filter:blur(5px);">
+    <button onclick="closeSlideshow()" style="position:absolute;top:20px;right:20px;background:none;color:white;border:none;"><i data-feather="x" style="width:30px;height:30px;"></i></button>
+    <div id="slideDate" style="color:var(--primary);font-size:18px;font-weight:800;margin-bottom:15px;font-family:'Oswald';"></div>
+    <img id="slideImg" src="" style="max-width:90%;max-height:65vh;border-radius:12px;">
+</div>
 
 <div id="vipPortal" style="display:none;background:var(--bg);color:var(--text);min-height:100vh;padding:40px 20px;">
     <div id="vipLoginBox" class="auth-card" style="margin-top:10vh;display:none;background:var(--card);">
@@ -361,10 +445,11 @@
 
     let currentUser = null; window.trainerProfile = null; window.clients = []; window.shifts = []; window.leads = []; window.expenses = []; window.plans = []; window.videoLibrary = []; window.researchCenter = [];
     window.workoutDB = { "Chest": ["Barbell Bench Press", "Incline Dumbbell Press", "Cable Crossovers", "Pec Deck Flyes"], "Back": ["Pull-ups", "Lat Pulldown", "Seated Cable Row", "Barbell Bent-Over Row"], "Shoulders": ["Overhead Barbell Press", "Lateral Raises", "Face Pulls"], "Biceps": ["Barbell Curl", "Dumbbell Hammer Curl"], "Triceps": ["Triceps Rope Pushdown", "Skullcrushers"], "Quads": ["Barbell Back Squat", "Leg Press", "Leg Extensions"], "Hamstrings": ["Romanian Deadlift (RDL)", "Seated Leg Curl"], "Glutes": ["Barbell Hip Thrust"], "Calves": ["Standing Calf Raise"], "Core": ["Plank", "Cable Crunches"], "Custom Exercises": [] };
-    window.today = new Date().toISOString().split('T')[0]; window.curID = null; window.curExName = ""; window.lastPerfData = null; window.tonnageChartInst = null; window.cardioChartInst = null; window.audioCtx = null; window.timerInt = null;
+    window.today = new Date().toISOString().split('T')[0]; window.curID = null; window.curExName = ""; window.lastPerfData = null; window.tonnageChartInst = null; window.cardioChartInst = null; window.audioCtx = null; window.timerInt = null; window.slideInterval = null; window.currentSlideIdx = 0;
     
+    // SAFE ICONS
     let iconTimeout = null; window.updateIcons = () => { if(!window.feather) return; clearTimeout(iconTimeout); iconTimeout = setTimeout(() => { try { window.feather.replace(); } catch(e){} }, 50); };
-    if (window.feather) window.updateIcons();
+    if (window.feather) window.feather.replace();
     if(localStorage.getItem('ryal_theme_v9') === 'light') document.body.classList.remove('dark-mode');
     setTimeout(() => { let l = document.getElementById('cloudLoader'); if (l && l.style.display !== 'none') { l.style.display = 'none'; alert("Connection Timeout. Check Adblockers."); } }, 8000);
 
@@ -372,23 +457,24 @@
     window.closeMenu = () => { document.getElementById('sideMenu').classList.remove('open'); const o = document.getElementById('menuOverlay'); o.classList.remove('open'); document.body.style.overflow = ''; setTimeout(()=> o.style.display = 'none', 300); };
     window.showMenuSection = (id) => { window.closeMenu(); ['sec-leads', 'sec-exp', 'sec-master-routine', 'sec-library', 'sec-research', 'sec-support', 'sec-endo'].forEach(x => { document.getElementById(x).style.display = 'none'; }); document.getElementById(id).style.display = 'block'; document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); };
 
+    // AI ENDO FIX
     window.runEndoAI = async () => {
         const apiKey = localStorage.getItem('ryal_ai_key'); if(!apiKey) { window.showAlert("Add Gemini API Key in Profile"); return; }
         const compound = document.getElementById('endoCompoundSearch').value.trim(); if(!compound) return;
         const btn = document.getElementById('endoAiBtn'); const resBox = document.getElementById('endoAiResult'); const old = btn.innerHTML;
         btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`; resBox.style.display = 'none'; window.updateIcons();
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Clinical profile for ${compound}. Use HTML tags only. No markdown.` }] }] }) });
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Clinical profile for ${compound}. Use HTML tags only. No markdown.` }] }] }) });
             const data = await response.json(); if(data.error) throw new Error(data.error.message);
             resBox.innerHTML = `<b style="color:var(--danger);font-size:16px;">${compound.toUpperCase()}</b><br>` + data.candidates[0].content.parts[0].text; resBox.style.display = 'block';
         } catch(e) { window.showAlert("Error: " + e.message); } finally { btn.innerHTML = old; window.updateIcons(); }
     };
 
+    // FIXED ATTENDANCE LOGIC
     window.logAtt = async (status) => {
         const d = document.getElementById('attDate').value || window.today; 
         const inT = document.getElementById('attIn').value; 
         const outT = document.getElementById('attOut').value;
-        if(!inT || !outT) return window.showAlert("Enter Shift Times");
         const [inH, inM] = inT.split(':').map(Number); const [outH, outM] = outT.split(':').map(Number); 
         let totalMins = (outH * 60 + outM) - (inH * 60 + inM); if (totalMins < 0) totalMins += 24 * 60; 
 
@@ -409,6 +495,7 @@
         await window.syncToCloud(); window.render();
     };
 
+    // FIXED REVENUE LOGIC
     window.renderRevenue = () => {
         let mData = {}; let todayRev = 0;
         [...window.shifts].sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(s => { 
@@ -442,25 +529,92 @@
         document.getElementById('statRevenue').innerText = `₹${todayRev.toFixed(0)}`; document.getElementById('statSessions').innerText = window.clients.reduce((count, c) => count + (c.logs && c.logs[window.today] && c.logs[window.today].length > 0 ? 1 : 0), 0); document.getElementById('statShift').innerText = window.shifts.find(x => x.date === window.today)?.status || "-"; window.updateIcons();
     };
 
-    window.generateAIExercises = async (isRefresh = false) => {
-        const apiKey = localStorage.getItem('ryal_ai_key'); if(!apiKey) { window.showAlert("Add API Key in Profile!"); return; }
-        const input = document.getElementById('aiWorkoutInput').value; if(!input) return;
-        const btn = isRefresh ? document.getElementById('aiRefreshBtn') : document.getElementById('aiGenerateBtn'); const originalHtml = btn.innerHTML; btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`; window.updateIcons();
+        // --- 1. RESTORED AI PLATEAU ANALYST ---
+    window.runPlateauAI = async () => {
+        const apiKey = localStorage.getItem('ryal_ai_key');
+        if(!apiKey) return window.showAlert("Add Gemini API Key in Profile Settings!");
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+
+        document.getElementById('aiThinking').style.display = 'block';
+        document.getElementById('aiResultText').style.display = 'none';
+        window.updateIcons();
+
+        let w = c.bca && c.bca.length ? c.bca[0].w : "Unknown";
+        let pbf = c.bca && c.bca.length ? c.bca[0].pbf : "Unknown";
+        let macros = c.macros ? `${c.macros.p}g Pro, ${c.macros.c}g Carb, ${c.macros.f}g Fat` : "Not calculated";
+        let recentWorkouts = Object.keys(c.logs || {}).slice(0, 3).map(d => `${d}: ${c.logs[d].map(l=>l.name).join(', ')}`).join('\n') || "No data";
+
+        const prompt = `Act as an elite sports scientist. Review this client and provide a concise, 3-step actionable protocol to break their plateau. Format with plain HTML tags (<b>, <br>). No markdown asterisks.\nClient: ${c.name}, ${c.gender}, ${c.age}yrs\nBody: ${w}kg, Fat ${pbf}%\nMacros: ${macros}\nRecent Logs:\n${recentWorkouts}`;
+
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Act as a coach. Provide exactly 6 exercises for: ${input}. Return ONLY a comma-separated list of names. No markdown.` }] }] }) });
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            const data = await response.json();
+            document.getElementById('aiResultText').innerHTML = data.candidates[0].content.parts[0].text;
+            document.getElementById('aiResultText').style.display = 'block';
+        } catch(e) { window.showAlert("AI Error: " + e.message); }
+        finally { document.getElementById('aiThinking').style.display = 'none'; }
+    };
+
+    // --- 2. FIXED AI EXERCISE GENERATOR (NO YAPPING) ---
+    window.generateAIExercises = async (isRefresh = false) => {
+        const apiKey = localStorage.getItem('ryal_ai_key'); if(!apiKey) return window.showAlert("Add API Key in Profile!");
+        const input = document.getElementById('aiWorkoutInput').value; if(!input) return;
+        const btn = isRefresh ? document.getElementById('aiRefreshBtn') : document.getElementById('aiGenerateBtn'); 
+        const originalHtml = btn.innerHTML; btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`; window.updateIcons();
+        
+        let extra = isRefresh ? "Provide 6 COMPLETELY DIFFERENT exercises. " : "";
+        const prompt = `Act as a fitness coach. ${extra}Provide exactly 6 exercises for: ${input}. STRICT RULE: Output ONLY a comma-separated list of names. NO intro text, NO outro text, NO bullet points, NO markdown, NO "Here are". Just the comma-separated names.`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
             const data = await response.json(); if(data.error) throw new Error(data.error.message);
-            let exercises = data.candidates[0].content.parts[0].text.replace(/\*/g, '').split(/,|\n/).map(e => e.replace(/^[0-9.\-]+\s*/, '').trim()).filter(e => e.length > 2);
-            document.getElementById('splitSelect').value = ""; document.getElementById('exTagsContainer').innerHTML = exercises.slice(0,8).map(ex => `<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`).join(''); document.getElementById('setForm').style.display = 'none';
+            
+            // Bulletproof cleanup: Removes markdown, splits by comma/newline, and aggressively filters out AI conversational junk
+            let exercises = data.candidates[0].content.parts[0].text.replace(/\*/g, '').split(/,|\n/)
+                .map(e => e.replace(/^[0-9.\-]+\s*/, '').trim())
+                .filter(e => e.length > 2 && e.length < 35 && !e.toLowerCase().includes('thought') && !e.toLowerCase().includes('user wants') && !e.toLowerCase().includes('here are'));
+            
+            document.getElementById('splitSelect').value = ""; 
+            document.getElementById('exTagsContainer').innerHTML = exercises.slice(0,8).map(ex => `<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`).join(''); 
+            document.getElementById('setForm').style.display = 'none';
         } catch(e) { window.showAlert("AI Failed"); } finally { btn.innerHTML = originalHtml; window.updateIcons(); }
     };
 
+    // --- 3. FIXED AI MOBILITY GENERATOR (NO YAPPING) ---
+    window.generateAIMobility = async (isRefresh = false) => {
+        const apiKey = localStorage.getItem('ryal_ai_key'); if(!apiKey) return window.showAlert("Add API Key in Profile!");
+        const input = document.getElementById('aiMobilityInput').value; if(!input) return;
+        const btn = isRefresh ? document.getElementById('aiMobRefreshBtn') : document.getElementById('aiMobGenerateBtn'); 
+        const originalHtml = btn.innerHTML; btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`; window.updateIcons();
+        
+        let extra = isRefresh ? "Provide 4 COMPLETELY DIFFERENT stretches. " : "";
+        const prompt = `Act as a physical therapist. ${extra}Provide exactly 4 stretches for: ${input}. STRICT RULE: Output ONLY a comma-separated list of names. NO intro text, NO outro text, NO bullet points, NO markdown. Just the comma-separated names.`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+            const data = await response.json(); if(data.error) throw new Error(data.error.message);
+            
+            // Bulletproof cleanup
+            let exercises = data.candidates[0].content.parts[0].text.replace(/\*/g, '').split(/,|\n/)
+                .map(e => e.replace(/^[0-9.\-]+\s*/, '').trim())
+                .filter(e => e.length > 2 && e.length < 40 && !e.toLowerCase().includes('thought') && !e.toLowerCase().includes('user wants') && !e.toLowerCase().includes('here are'));
+            
+            document.getElementById('mobTagsContainer').innerHTML = exercises.slice(0,6).map(ex => `<div class="ex-tag" onclick="document.getElementById('mobMuscle').value='${input}'; document.getElementById('mobExercise').value='${ex}';">${ex}</div>`).join(''); 
+        } catch(e) { window.showAlert("AI Failed"); } finally { btn.innerHTML = originalHtml; window.updateIcons(); }
+    };
+
+
+    // CORE SYNC & RENDER
     window.syncToCloud = async () => {
         if (!currentUser) return;
         await setDoc(doc(db, "trainers", currentUser.uid), { profile: window.trainerProfile, clients: window.clients, shifts: window.shifts, leads: window.leads, expenses: window.expenses, plans: window.plans, workoutDB: window.workoutDB, videoLibrary: window.videoLibrary, researchCenter: window.researchCenter });
         await Promise.all(window.clients.map(c => setDoc(doc(db, "vip_portals", c.id.toString()), { trainerName: window.trainerProfile.name, client: c, plans: window.plans.filter(p => p.clientId == c.id), videoLibrary: window.videoLibrary || [], researchCenter: window.researchCenter || [] })));
     };
 
-    window.render = () => { window.renderPlanner(); window.renderLeads(); window.renderAttendance(); window.renderExpenses(); window.renderRoster(); window.renderRevenue(); window.renderLibrary(); window.renderResearch(); window.renderSplitManager(); window.updateIcons(); };
+    window.render = () => {
+        window.renderPlanner(); window.renderLeads(); window.renderAttendance(); window.renderExpenses(); window.renderRoster(); window.renderRevenue(); window.renderLibrary(); window.renderResearch(); window.renderSplitManager(); window.updateIcons();
+    };
 
     window.renderPlanner = () => { let aC = window.clients.filter(c => Object.keys(c.logs || {}).length < c.sess); document.getElementById('planClient').innerHTML = `<option value="">-- Choose Client --</option>` + aC.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); let tE = 0; let html = ""; window.plans.forEach(p => { let c = window.clients.find(x => x.id == p.clientId); if(!c) return; tE += ((c.pay||0)/(1+(c.gst||0))*(c.ret||0))/(c.sess||1); html += `<div class="history-row bg-override" style="background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:5px; flex-direction:column; align-items:flex-start;"><b style="font-size:14px;">${c.name}</b><div style="font-size:12px; color:var(--text-muted);">${p.date} @ ${p.time} - ${p.workout}</div><button class="btn-sub" style="margin-top:5px; width:100%; border-color:#10b981; color:#10b981;" onclick="completePlan(${p.id})">Mark Complete</button></div>`; }); document.getElementById('planList').innerHTML = html; document.getElementById('planEarnings').innerText = `₹${tE.toFixed(0)}`; };
     window.renderLeads = () => { document.getElementById('leadsList').innerHTML = window.leads.map(l => `<div style="background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border); margin-bottom:5px;"><b style="font-size:14px;">${l.name}</b><br><span style="font-size:12px; color:var(--text-muted);">${l.contact}</span><button class="btn-main" style="margin-top:5px;" onclick="convertLead(${l.id})">Convert</button></div>`).join(''); };
@@ -471,6 +625,7 @@
     window.renderResearch = () => { document.getElementById('researchList').innerHTML = window.researchCenter.map(r => `<div class="history-row" style="font-size:13px;"><span>${r.title}</span><button class="btn-action danger" onclick="delResearchArticle(${r.id})"><i data-feather="trash-2"></i></button></div>`).join(''); window.updateIcons(); };
     window.renderSplitManager = () => { let h = ""; Object.keys(window.workoutDB).forEach(s => { h += `<div style="margin-bottom:10px; background:var(--card); padding:10px; border-radius:10px; border:1px solid var(--border);"><b>${s}</b><div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">${window.workoutDB[s].map((ex,i)=>`<span class="badge" style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:5px;">${ex} <i data-feather="x" style="width:10px; cursor:pointer; color:var(--danger);" onclick="removeExFromSplit('${s}', ${i})"></i></span>`).join('')}</div></div>`; }); document.getElementById('splitManagerList').innerHTML = h; document.getElementById('existingSplits').innerHTML = Object.keys(window.workoutDB).map(s=>`<option value="${s}">`).join(''); document.getElementById('muscleDataList').innerHTML = Object.keys(window.workoutDB).map(s=>`<option value="${s}">`).join(''); window.updateIcons(); };
 
+    // MISC FUNCTIONS
     window.showAlert = (msg) => { return new Promise(r => { document.getElementById('modalText').innerText=msg; document.getElementById('modalBtns').innerHTML=`<button class="btn-main" onclick="document.getElementById('ryalModalOverlay').style.display='none';">OK</button>`; document.getElementById('ryalModalOverlay').style.display='flex'; }); };
     window.showConfirm = (msg, cb) => { document.getElementById('modalText').innerText=msg; document.getElementById('modalBtns').innerHTML=`<button class="btn-sub" onclick="document.getElementById('ryalModalOverlay').style.display='none';">Cancel</button><button class="btn-danger" onclick="document.getElementById('ryalModalOverlay').style.display='none';(${cb})();">Yes</button>`; document.getElementById('ryalModalOverlay').style.display='flex'; };
     window.toggleTheme = () => { document.body.classList.toggle('dark-mode'); localStorage.setItem('ryal_theme_v9', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); if(window.curID) window.renderTonnageChart(); };
@@ -478,6 +633,7 @@
     window.toggleGroup = (id, el) => { const div = document.getElementById(id); div.style.display = div.style.display === 'none' ? 'flex' : 'none'; };
     window.formatTime = (time24) => { if(!time24) return ''; const [h, m] = time24.split(':'); return `${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`; };
     
+    // APP INITIALIZATION
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
@@ -500,10 +656,12 @@
     window.saveTrainerProfile = async () => { const n = document.getElementById('authName').value; const sal = parseFloat(document.getElementById('authSalary').value); if(!n || !sal) return window.showAlert("Name & Salary Required"); window.trainerProfile = { name:n, email:document.getElementById('authEmail').value, phone:document.getElementById('authPhone').value, salary:sal, shiftIn:document.getElementById('authIn').value, shiftOut:document.getElementById('authOut').value }; if(document.getElementById('authAiKey').value) localStorage.setItem('ryal_ai_key', document.getElementById('authAiKey').value); await window.syncToCloud(); window.initApp(); window.render(); };
     window.initApp = () => { document.getElementById('authView').style.display='none'; document.getElementById('appContainer').style.display='block'; document.getElementById('menuTrainerName').innerText = window.trainerProfile.name.split(' ')[0]; document.getElementById('attDate').value=window.today; document.getElementById('logDate').value=window.today; document.getElementById('reportMonthInput').value=window.today.slice(0,7); if(!document.getElementById('attIn').value) document.getElementById('attIn').value = window.trainerProfile.shiftIn; if(!document.getElementById('attOut').value) document.getElementById('attOut').value = window.trainerProfile.shiftOut; };
 
+    // CLIENT OVERLAY / WORKOUT / NUTRITION FUNCTIONS
     window.openOv = (id) => { window.curID = id; const c = window.clients.find(x => x.id === id); document.getElementById('clientOverlay').style.display = 'block'; document.getElementById('ovName').innerText = c.name; document.getElementById('ovTags').innerHTML = `${c.phone?`<span style="color:var(--info);"><i data-feather="phone"></i> ${c.phone}</span> | `:''}${c.gender||'N/A'} | ${c.age||'-'} | ${c.height||'-'}`; document.getElementById('bcaDate').value = window.today; window.renderBcaHistory(); window.renderMealBuilder(); window.renderTonnageChart(); window.renderGallery(); window.updateIcons(); };
     window.regClient = async () => { const n = document.getElementById('regName').value; if(!n) return; window.clients.push({ id:Date.now(), name:n, goal:document.getElementById('regGoal').value, phone:document.getElementById('regPhone').value, gender:document.getElementById('regGender').value, age:document.getElementById('regAge').value, height:document.getElementById('regHeight').value, receipt:document.getElementById('regReceipt').value, slot:document.getElementById('regSlot').value, med:document.getElementById('regMed').value, prof:document.getElementById('regProf').value, pay:parseFloat(document.getElementById('regPay').value)||0, sess:parseInt(document.getElementById('regSess').value)||1, logs:{}, bca:[], meals:[], gallery:[], cardio:[], mobility:[] }); await window.syncToCloud(); window.render(); document.getElementById('regName').value=""; window.showAlert("Client Saved"); };
     window.deleteCurrentClient = () => { window.showConfirm("DANGER: Delete client?", async () => { window.clients = window.clients.filter(c => c.id !== window.curID); await window.syncToCloud(); document.getElementById('clientOverlay').style.display = 'none'; window.render(); }); };
     
+    // BCA & MEALS
     window.saveBca = async () => { const c = window.clients.find(x => x.id === window.curID); const d = document.getElementById('bcaDate').value; const w = parseFloat(document.getElementById('inWeight').value)||0; if(w===0) return window.showAlert("Enter Weight"); c.bca.push({ date:d, w, smm:parseFloat(document.getElementById('inSmm').value)||0, pbf:parseFloat(document.getElementById('inPbf').value)||0, bmi:parseFloat(document.getElementById('inBmi').value)||0, score:parseFloat(document.getElementById('inScore').value)||0, visFat:parseFloat(document.getElementById('inVisFat').value)||0, bmr:parseFloat(document.getElementById('inBmr').value)||0 }); c.bca.sort((a,b)=>new Date(b.date)-new Date(a.date)); await window.syncToCloud(); window.renderBcaHistory(); };
     window.renderBcaHistory = () => { const c = window.clients.find(x => x.id === window.curID); document.getElementById('bcaHistory').innerHTML = c.bca.map(b => `<div class="history-row" style="font-size:12px;"><span>${b.date} - W:${b.w} F:${b.pbf} M:${b.smm}</span><button class="btn-action danger" onclick="delBca('${b.date}')"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('bcaHistory').style.display = c.bca.length?'block':'none'; window.updateIcons(); };
     window.delBca = (d) => { window.clients.find(x=>x.id===window.curID).bca = window.clients.find(x=>x.id===window.curID).bca.filter(b=>b.date!==d); window.syncToCloud().then(window.renderBcaHistory); };
@@ -512,23 +670,84 @@
     window.renderMealBuilder = () => { const c = window.clients.find(x => x.id === window.curID); if(!c.tdee) return; let tP=0, tC=0, tF=0, tKcal=0; c.meals.forEach(m=>{tP+=m.p; tC+=m.c; tF+=m.f; tKcal+=(m.p*4+m.c*4+m.f*9);}); document.getElementById('mealStatsArea').innerHTML=`<div style="display:flex; justify-content:space-between; background:var(--bg); padding:10px; border-radius:10px;"><div>TDEE: ${c.tdee}</div><div>REM: ${c.tdee-tKcal}</div></div>`; document.getElementById('mealListArea').innerHTML=c.meals.map(m=>`<div class="history-row" style="font-size:12px;"><span>${m.name} (P:${m.p} C:${m.c} F:${m.f})</span><button class="btn-action danger" onclick="delMeal(${m.id})"><i data-feather="trash-2"></i></button></div>`).join(''); window.updateIcons(); };
     window.delMeal = (id) => { window.clients.find(x=>x.id===window.curID).meals = window.clients.find(x=>x.id===window.curID).meals.filter(m=>m.id!==id); window.syncToCloud().then(window.renderMealBuilder); };
 
+    // WORKOUTS
     window.loadSplit = (s) => { const el = document.getElementById('exTagsContainer'); document.getElementById('setForm').style.display='none'; if(window.workoutDB[s]) { document.getElementById('logWorkoutName').value = document.getElementById('logWorkoutName').value||s; el.innerHTML = window.workoutDB[s].map(ex=>`<div class="ex-tag" onclick="selSplitEx('${ex}', this)">${ex}</div>`).join(''); } else el.innerHTML=""; };
     window.selSplitEx = (n, el) => { document.querySelectorAll('.ex-tag').forEach(e=>e.classList.remove('active')); el.classList.add('active'); window.curExName = n; document.getElementById('curEx').innerText = n; window.generateSetInputs(); document.getElementById('setForm').style.display='block'; };
     window.searchEx = (v) => { const r = document.getElementById('searchRes'); if(v.length<2) return r.style.display='none'; let m=[]; Object.values(window.workoutDB).forEach(l=>l.forEach(e=>{if(e.toLowerCase().includes(v.toLowerCase())&&!m.includes(e)) m.push(e);})); r.innerHTML = m.map(ex=>`<div style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="selSplitEx('${ex}', this);document.getElementById('searchRes').style.display='none';">${ex}</div>`).join(''); r.style.display='block'; };
     window.generateSetInputs = () => { let c = parseInt(document.getElementById('numSets').value)||1; let h=""; for(let i=1;i<=c;i++) h+=`<div style="display:flex;gap:5px;margin-bottom:5px;align-items:center;"><span style="font-size:10px;width:30px;">S${i}</span><input type="number" id="inW_${i}" placeholder="kg" style="margin:0;"><input type="number" id="inR_${i}" placeholder="Reps" style="margin:0;"></div>`; document.getElementById('setInputsContainer').innerHTML=h; };
     window.saveExercise = async () => { const d = document.getElementById('logDate').value; const wName = document.getElementById('logWorkoutName').value; let sets=[]; const c=parseInt(document.getElementById('numSets').value)||1; for(let i=1;i<=c;i++){ let w=document.getElementById(`inW_${i}`).value; let r=document.getElementById(`inR_${i}`).value; if(w||r) sets.push({set:i,w,r}); } if(!sets.length) return; const cl = window.clients.find(x=>x.id===window.curID); if(!cl.logs[d]) cl.logs[d]=[]; cl.logs[d].push({id:Date.now(), workoutName:wName, name:window.curExName, sets}); await window.syncToCloud(); document.getElementById('setForm').style.display='none'; window.renderTonnageChart(); window.render(); };
-    window.renderTonnageChart = () => { const c = window.clients.find(x=>x.id===window.curID); if(window.tonnageChartInst) window.tonnageChartInst.destroy(); let map={}; Object.keys(c.logs||{}).forEach(d=>{ let t=0; c.logs[d].forEach(e=>{e.sets.forEach(s=>t+=(parseFloat(s.w)||0)*(parseInt(s.r)||0))}); if(t>0) map[d]=t; }); const dates=Object.keys(map).slice(-10); const vols=dates.map(d=>map[d]); window.tonnageChartInst = new Chart(document.getElementById('tonnageChart').getContext('2d'), { type:'bar', data:{labels:dates,datasets:[{data:vols,backgroundColor:'#3b82f6'}]}, options:{plugins:{legend:{display:false}}} }); };
+    // --- FIXED TONNAGE (VOLUME) CHART LOGIC ---
+    window.renderTonnageChart = () => { 
+        const c = window.clients.find(x => x.id === window.curID); 
+        if(window.tonnageChartInst) window.tonnageChartInst.destroy(); 
+        
+        let map = {}; 
+        Object.keys(c.logs || {}).forEach(d => { 
+            let t = 0; 
+            c.logs[d].forEach(e => { 
+                if(e.sets) {
+                    e.sets.forEach(s => t += (parseFloat(s.w) || 0) * (parseInt(s.r) || 0));
+                }
+            }); 
+            if(t > 0) map[d] = t; 
+        }); 
 
+        // Sort dates chronologically so the chart moves forward in time
+        const dates = Object.keys(map).sort((a,b) => new Date(a) - new Date(b)).slice(-10); 
+        const vols = dates.map(d => map[d]); 
+
+        const canvas = document.getElementById('tonnageChart');
+        const noDataText = document.getElementById('tonnageNoData');
+
+        // Check if we actually have data to show
+        if (dates.length === 0) {
+            canvas.style.display = 'none';
+            noDataText.style.display = 'block';
+            return;
+        }
+
+        // We have data, so show the chart and hide the text
+        canvas.style.display = 'block';
+        noDataText.style.display = 'none';
+
+        // Render the premium chart
+        const ctx = canvas.getContext('2d');
+        window.tonnageChartInst = new Chart(ctx, { 
+            type: 'bar', 
+            data: { 
+                labels: dates, 
+                datasets: [{ 
+                    label: 'Tonnage (kg)', 
+                    data: vols, 
+                    backgroundColor: '#3b82f6', // Premium Info Blue
+                    borderRadius: 6 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(150,150,150,0.1)' } }
+                }
+            } 
+        }); 
+    };
+
+
+    // MISC DEFAULTS
     window.addExpense = async () => { const d = document.getElementById('expDate').value||window.today; const c = document.getElementById('expCat').value; const desc = document.getElementById('expDesc').value; const amt = parseFloat(document.getElementById('expAmt').value); if(!amt) return; window.expenses.push({ id:Date.now(), date:d, cat:c, desc:desc, amt:amt }); await window.syncToCloud(); window.render(); };
     window.delExpense = (id) => { window.expenses = window.expenses.filter(e => e.id !== id); window.syncToCloud().then(window.render); };
     window.addPlan = async () => { window.plans.push({ id:Date.now(), clientId:parseInt(document.getElementById('planClient').value), date:document.getElementById('planDate').value, time:document.getElementById('planTime').value, workout:document.getElementById('planWorkout').value }); await window.syncToCloud(); window.render(); };
     window.delShift = (id) => { window.shifts = window.shifts.filter(s => s.id !== id); window.syncToCloud().then(window.render); };
     window.exportData = () => { const blob = new Blob([JSON.stringify({profile:window.trainerProfile, clients:window.clients, shifts:window.shifts, expenses:window.expenses, plans:window.plans})], {type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`RyalFit_Backup.json`; a.click(); };
 
+    // --- RESTORED: LEAD & TRIAL PIPELINE ---
     window.addLead = async () => { const n = document.getElementById('leadName').value; const c = document.getElementById('leadContact').value; if(!n) return; window.leads.push({ id:Date.now(), name:n, contact:c, date:window.today, trials:[] }); await window.syncToCloud(); window.render(); document.getElementById('leadName').value=""; document.getElementById('leadContact').value=""; };
     window.logTrial = async (id) => { const l = window.leads.find(x=>x.id===id); l.trials.push({date:document.getElementById(`trialDate_${id}`).value, activity:document.getElementById(`trialAct_${id}`).value, remark:document.getElementById(`trialRem_${id}`).value}); await window.syncToCloud(); window.render(); };
     window.convertLead = async (id) => { const l = window.leads.find(x=>x.id===id); window.leads = window.leads.filter(x=>x.id!==id); document.getElementById('regName').value=l.name||""; document.getElementById('regPhone').value=l.contact||""; window.showMenuSection('sec-prof'); await window.syncToCloud(); window.render(); };
 
+    // --- RESTORED: SUPPORT, RESEARCH, LIBRARY, SPLIT BUILDER ---
     window.sendSupportTicket = async () => { await addDoc(collection(db, "support_tickets"), { uid:currentUser.uid, trainer:window.trainerProfile.name, subject:document.getElementById('supportSubject').value, message:document.getElementById('supportMsg').value, date:window.today }); window.showAlert("Ticket Sent!"); document.getElementById('supportSubject').value=""; document.getElementById('supportMsg').value=""; };
     window.addResearchArticle = async () => { window.researchCenter.push({ id:Date.now(), title:document.getElementById('resTitle').value, cat:document.getElementById('resCat').value, content:document.getElementById('resContent').value, date:window.today }); await window.syncToCloud(); window.renderResearch(); };
     window.delResearchArticle = (id) => { window.researchCenter = window.researchCenter.filter(r=>r.id!==id); window.syncToCloud().then(window.renderResearch); };
@@ -537,11 +756,13 @@
     window.addExerciseToSplit = async () => { const s = document.getElementById('newSplitName').value; const e = document.getElementById('newSplitEx').value; if(!window.workoutDB[s]) window.workoutDB[s]=[]; if(!window.workoutDB[s].includes(e)) window.workoutDB[s].push(e); await window.syncToCloud(); window.renderSplitManager(); };
     window.removeExFromSplit = async (s,i) => { window.workoutDB[s].splice(i,1); await window.syncToCloud(); window.renderSplitManager(); };
 
+    // --- RESTORED: CLIENT EDITING & WHATSAPP UTILS ---
     window.showEditForm = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('editName').value=c.name; document.getElementById('editGoal').value=c.goal||""; document.getElementById('editPhone').value=c.phone||""; document.getElementById('editSess').value=c.sess; document.getElementById('ovEditForm').style.display='block'; document.getElementById('clientMenu').style.display='none'; };
     window.saveClientEdit = async () => { const c=window.clients.find(x=>x.id===window.curID); c.name=document.getElementById('editName').value; c.goal=document.getElementById('editGoal').value; c.phone=document.getElementById('editPhone').value; c.sess=parseInt(document.getElementById('editSess').value)||c.sess; document.getElementById('ovEditForm').style.display='none'; await window.syncToCloud(); window.openOv(window.curID); window.render(); };
     window.sendWaReminder = () => { const c=window.clients.find(x=>x.id===window.curID); const msg=`Hello ${c.name},\nReminder for your upcoming session at ${window.formatTime(c.slot||"")}.\nSee you soon! 💪\n-${window.trainerProfile.name.split(' ')[0]}`; window.open(`https://wa.me/${(c.phone||"").replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`); };
     window.generateVIPLink = () => { navigator.clipboard.writeText(window.location.origin+window.location.pathname+'?vip='+window.curID); window.showAlert("VIP Link Copied to clipboard!"); document.getElementById('clientMenu').style.display='none'; };
 
+    // --- RESTORED: TIMELINE GALLERY & SLIDESHOW     // --- TIMELINE GALLERY & AUTO-CAROUSEL ---
     window.uploadToGallery = (e) => { 
         const f = e.target.files[0]; 
         if(!f) return; 
@@ -554,8 +775,15 @@
                 cv.height = i.height * (300 / i.width); 
                 cv.getContext('2d').drawImage(i, 0, 0, cv.width, cv.height); 
                 const c = window.clients.find(x => x.id === window.curID); 
+                
+                // CRITICAL FIX: Ensure gallery array exists for new clients
                 if (!c.gallery) c.gallery = []; 
-                c.gallery.push({ id: Date.now(), date: document.getElementById('gallerySearchDate').value || window.today, img: cv.toDataURL('image/jpeg', 0.6) }); 
+                
+                c.gallery.push({
+                    id: Date.now(), 
+                    date: document.getElementById('gallerySearchDate').value || window.today, 
+                    img: cv.toDataURL('image/jpeg', 0.6)
+                }); 
                 c.gallery.sort((a,b) => new Date(b.date) - new Date(a.date)); 
                 await window.syncToCloud(); 
                 window.renderGallery(); 
@@ -579,6 +807,7 @@
             return; 
         } 
         
+        // Render images with smooth fade-in animation
         grid.innerHTML = c.gallery.map(p => `
             <div class="gallery-item" style="animation: fadeIn 0.4s ease forwards;">
                 <img src="${p.img}" class="gallery-img" style="pointer-events:none;">
@@ -591,19 +820,24 @@
         
         if(window.feather) setTimeout(() => window.feather.replace(), 10); 
 
+        // Auto-Scroll Engine
         if(window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
         
         window.galleryAutoScroller = setInterval(() => {
-            if(grid.children.length < 2) return; 
+            if(grid.children.length < 2) return; // Don't scroll if there is only 1 image
             
             const maxScroll = grid.scrollWidth - grid.clientWidth;
+            
+            // Reverse direction if we hit the edges
             if(grid.scrollLeft >= maxScroll - 5) {
-                window.galleryScrollDirection = -1;
+                window.galleryScrollDirection = -1; // Go left
             } else if(grid.scrollLeft <= 0) {
-                window.galleryScrollDirection = 1;
+                window.galleryScrollDirection = 1;  // Go right
             }
+            
+            // Slide by 145px (image width + gap)
             grid.scrollBy({ left: 145 * window.galleryScrollDirection, behavior: 'smooth' });
-        }, 2500); 
+        }, 2500); // Triggers every 2.5 seconds
     };
 
     window.delGalleryPhoto = (id) => { 
@@ -615,6 +849,15 @@
         });
     };
 
+
+    window.delGalleryPhoto = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.gallery=c.gallery.filter(p=>p.id!==id); window.syncToCloud().then(window.renderGallery); };
+    //window.startSlideshow = (idx) => { const c=window.clients.find(x=>x.id===window.curID); if(!c.gallery.length) return; window.currentSlideIdx = idx!==undefined?idx:0; document.getElementById('slideshowModal').style.display='flex'; window.updateSlide(); clearInterval(window.slideInterval); window.slideInterval=setInterval(window.nextSlide, 2500); };
+    //window.updateSlide = () => { const p=window.clients.find(x=>x.id===window.curID).gallery[window.currentSlideIdx]; document.getElementById('slideImg').src=p.img; document.getElementById('slideDate').innerText=p.date; };
+    //window.nextSlide = () => { const c=window.clients.find(x=>x.id===window.curID); window.currentSlideIdx++; if(window.currentSlideIdx>=c.gallery.length) window.currentSlideIdx=0; window.updateSlide(); };
+    //window.closeSlideshow = () => { clearInterval(window.slideInterval); document.getElementById('slideshowModal').style.display='none'; };
+    window.searchGalleryByDate = (d) => { const c=window.clients.find(x=>x.id===window.curID); const idx=c.gallery.findIndex(p=>p.date===d); if(idx!==-1) window.startSlideshow(idx); };
+
+    // --- RESTORED: CARDIO & MOBILITY ---
     window.saveCardio = async () => { const c=window.clients.find(x=>x.id===window.curID); c.cardio.push({id:Date.now(), date:document.getElementById('cardioDate').value||window.today, type:document.getElementById('cardioType').value, dist:document.getElementById('cardioDist').value, time:document.getElementById('cardioTime').value}); c.cardio.sort((a,b)=>new Date(b.date)-new Date(a.date)); await window.syncToCloud(); window.renderCardio(); };
     window.renderCardio = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('cardioList').innerHTML=c.cardio.map(l=>`<div class="history-row" style="font-size:12px; background:var(--card); padding:10px; border-radius:10px; margin-bottom:5px;"><span><b>${l.type}</b>: ${l.dist}km in ${l.time}m<br><span style="color:var(--text-muted);font-size:10px;">${l.date}</span></span><button class="btn-action danger" onclick="delCardio(${l.id})"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('cardioList').style.display=c.cardio.length?'block':'none'; window.updateIcons(); };
     window.delCardio = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.cardio=c.cardio.filter(l=>l.id!==id); window.syncToCloud().then(window.renderCardio); };
@@ -623,10 +866,12 @@
     window.renderMobility = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('mobList').innerHTML=c.mobility.map(l=>`<div class="history-row" style="font-size:12px; background:var(--card); padding:10px; border-radius:10px; margin-bottom:5px;"><span><b>${l.muscle}</b>: ${l.exercise}<br><span style="color:var(--text-muted);font-size:10px;">${l.time}s x ${l.sets} sets | ${l.date}</span></span><button class="btn-action danger" onclick="delMobility(${l.id})"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('mobList').style.display=c.mobility.length?'block':'none'; window.updateIcons(); };
     window.delMobility = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.mobility=c.mobility.filter(l=>l.id!==id); window.syncToCloud().then(window.renderMobility); };
 
+    // --- RESTORED: FETCH MACROS & PRINT REPORTS ---
     window.fetchMacros = async () => { const f=document.getElementById('mbName').value; if(!f) return; try{ const res=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(f)}&pageSize=1`); const data=await res.json(); if(data.foods&&data.foods.length){ let n=data.foods[0].foodNutrients; let get=(id)=>n.find(x=>x.nutrientId===id)?.value||0; document.getElementById('mbP').value=Math.round(get(1003)); document.getElementById('mbC').value=Math.round(get(1005)); document.getElementById('mbF').value=Math.round(get(1004)); } }catch(e){} };
     window.generateProgressPDF = () => { setTimeout(()=>window.print(), 500); };
     window.generateMonthlyReportPDF = () => { setTimeout(()=>window.print(), 500); };
 
+    // --- RESTORED: LIVE VIP PORTAL DASHBOARD ---
     window.loginVIP = async () => { const id=document.getElementById('vipIdInput').value; document.getElementById('cloudLoader').style.display='flex'; try{ const snap=await getDoc(doc(db, "vip_portals", id)); if(snap.exists()){ window.vipDataStore=snap.data(); document.getElementById('vipLoginBox').style.display='none'; document.getElementById('vipDashboard').style.display='block'; window.renderLiveVIP(); } else { window.showAlert("Invalid Client ID"); } }catch(e){} document.getElementById('cloudLoader').style.display='none'; };
     window.renderLiveVIP = () => { const d=window.vipDataStore; document.getElementById('vipLiveName').innerText=d.client.name; document.getElementById('vipLiveTrainer').innerText=`Trainer: ${d.trainerName}`; document.getElementById('vipResearchDocs').innerHTML=d.researchCenter.map(r=>`<div style="background:var(--card); padding:15px; border-radius:10px; margin-bottom:10px;"><b>${r.title}</b><br><span style="font-size:12px;color:var(--text-muted);">${r.content}</span></div>`).join('') || "No research published."; document.getElementById('vipPrevious').innerHTML=Object.keys(d.client.logs||{}).sort().reverse().map(date=>`<div style="background:var(--bg); padding:10px; border-radius:10px; margin-bottom:8px;"><b>${date}</b>: <span style="font-size:12px;">${d.client.logs[date].map(l=>l.name).join(', ')}</span></div>`).join('') || "No logs."; window.searchVipLibrary(''); };
     window.searchVipLibrary = (q) => { const d=window.vipDataStore; document.getElementById('vipLibResults').innerHTML=(d.videoLibrary||[]).filter(v=>v.name.toLowerCase().includes(q.toLowerCase())).map(v=>`<a href="${v.url}" target="_blank" style="display:block; background:var(--card); padding:12px; border-radius:10px; margin-bottom:8px; color:var(--text); text-decoration:none;"><b>${v.name}</b><br><span style="font-size:10px;color:var(--text-muted);">${v.muscle}</span></a>`).join('') || "No videos found."; };
