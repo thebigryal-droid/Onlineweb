@@ -195,6 +195,22 @@
             font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
         }
         .spinner { width: 45px; height: 45px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+                /* --- OVERLAY & VIP PRINT CSS --- */
+        #clientOverlay { 
+            display:none; position:fixed; inset:0; background:var(--bg); 
+            z-index:80000; padding:20px; overflow-y:auto; 
+        }
+        
+        .chat-msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 13px; line-height: 1.5; margin-bottom: 10px; }
+        .chat-msg.user { align-self: flex-end; background: var(--primary); color: #000; border-bottom-right-radius: 4px; font-weight: 600; margin-left: auto; }
+        .chat-msg.bot { align-self: flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #ryalPrintArea, #ryalPrintArea * { visibility: visible; }
+            #ryalPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+        }
+
     </style>
 </head>
 <body id="mainBody" class="dark-mode">
@@ -496,23 +512,20 @@
     </div>
 </div>
 
-<div id="aiAssistantOverlay">
-    <div class="chat-container">
-        <div class="chat-header">
-            <b style="font-size:14px; display:flex; align-items:center; gap:8px; color:var(--text);"><i data-feather="cpu" style="color:var(--ai-glow);"></i> AI Coaching Assistant</b>
-            <i data-feather="x" onclick="closeAIChat()" style="cursor:pointer; color:var(--text-muted);"></i>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="msg bot">Hello coach! I'm ready to analyze this client's profile. What do you need to know?</div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" id="aiChatInput" placeholder="Ask about macros, injuries, plateaus..." style="margin-bottom:0; flex:1;">
-            <button class="btn-main" style="width:auto; padding:12px 18px; margin-bottom:0;" onclick="sendAiChatMessage()">
-                <i data-feather="send" style="margin:0;"></i>
-            </button>
+    <div class="section active" id="sec-sam" style="border-left:4px solid var(--ai-glow);">
+        <h2 onclick="toggleSec('sec-sam')"><span><i data-feather="cpu" style="color:var(--ai-glow);margin-right:8px;"></i> Sam (AI Co-Pilot)</span> <i data-feather="chevron-down" class="chevron"></i></h2>
+        <div class="collapsible">
+            <div id="chatMessages" style="max-height:250px; overflow-y:auto; padding:15px; background:rgba(0,0,0,0.05); border-radius:12px; margin-bottom:15px; border:1px solid var(--border);">
+                </div>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="aiChatInput" placeholder="Ask Sam about plateaus, macros, or workouts..." style="margin-bottom:0; flex:1; border-color:var(--ai-glow);">
+                <button class="btn-main" style="width:auto; padding:12px 18px; margin-bottom:0; background:var(--ai-glow); color:white;" onclick="sendAiChatMessage()">
+                    <i data-feather="send" style="margin:0;"></i>
+                </button>
+            </div>
         </div>
     </div>
-</div>
+
 
 <div id="restTimerUI"><i data-feather="clock"></i> <span id="timerText">01:30</span><button onclick="stopRestTimer()" style="background:none;border:none;color:var(--danger);display:flex;"><i data-feather="x-circle" style="margin:0;"></i></button></div>
 
@@ -791,15 +804,20 @@
         finally { btn.innerHTML = old; window.updateIcons(); }
     };
     // --- 8. AI ASSISTANT CHAT (GEMINI 2.5 FLASH) ---
-    window.openAIChat = () => {
-        const c = window.clients.find(x => x.id === window.curID);
-        if(!c) return;
-        document.getElementById('aiAssistantOverlay').style.display = 'flex';
-        // Reset chat with welcome message
-        document.getElementById('chatMessages').innerHTML = `<div class="msg bot">Hello coach! I have loaded <b>${c.name}'s</b> profile, including their macros, InBody stats, and recent workouts. How can I help you adjust their protocol?</div>`;
+    // --- 1. RESTORE LOG HISTORY BUTTON ---
+    window.toggleHistory = (id) => {
+        const row = document.getElementById(`hist-${id}`);
+        if(row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
     };
 
-    window.closeAIChat = () => { document.getElementById('aiAssistantOverlay').style.display = 'none'; };
+    // --- 2. SAM THE AI: CLIENT-EMBEDDED LOGIC ---
+    // Update openOv to clear Sam's chat when opening a new client
+    const originalOpenOv = window.openOv;
+    window.openOv = (id) => { 
+        originalOpenOv(id);
+        const c = window.clients.find(x => x.id === id);
+        document.getElementById('chatMessages').innerHTML = `<div class="chat-msg bot">Hello coach! I'm <b>Sam</b>. I've loaded <b>${c.name}'s</b> profile, stats, and recent logs. How can we optimize their protocol today?</div>`;
+    };
 
     window.sendAiChatMessage = async () => {
         const inputEl = document.getElementById('aiChatInput');
@@ -812,31 +830,24 @@
         const c = window.clients.find(x => x.id === window.curID);
         const chatBox = document.getElementById('chatMessages');
         
-        // Append user message
-        chatBox.innerHTML += `<div class="msg user">${msg}</div>`;
+        chatBox.innerHTML += `<div class="chat-msg user">${msg}</div>`;
         inputEl.value = "";
         
-        // Append loading indicator
         const loadId = 'loading-' + Date.now();
-        chatBox.innerHTML += `<div class="msg bot" id="${loadId}"><i data-feather="loader" style="animation:spin 1s linear infinite; width:14px;"></i> Thinking...</div>`;
+        chatBox.innerHTML += `<div class="chat-msg bot" id="${loadId}"><i data-feather="loader" style="animation:spin 1s linear infinite; width:14px;"></i> Analyzing...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
         window.updateIcons();
 
-        // Build Deep Context for AI
         let w = c.bca && c.bca.length ? c.bca[0].w : "Unknown";
         let pbf = c.bca && c.bca.length ? c.bca[0].pbf : "Unknown";
         let macros = c.macros ? `${c.macros.p}g Pro, ${c.macros.c}g Carb, ${c.macros.f}g Fat` : "Not calculated";
-        let injuries = c.med ? c.med : "None reported";
         let recentWorkouts = Object.keys(c.logs || {}).sort().reverse().slice(0, 3).map(d => `${d}: ${c.logs[d].map(l=>l.name).join(', ')}`).join(' | ') || "No data";
         
-        const prompt = `Act as an elite personal training assistant. I am the head coach. 
-        Here is the background on my client, ${c.name} (Gender: ${c.gender}, Age: ${c.age}). 
-        Goal: ${c.goal}. Injuries/Medical: ${injuries}. 
-        Current Body: ${w}kg, ${pbf}% Body Fat. 
-        Current Macros: ${macros}. 
-        Recent Workouts: ${recentWorkouts}. 
-        Answer my next question concisely based on this clinical data. Format with basic HTML (<b>, <br>) but NO markdown asterisks. 
-        My question: "${msg}"`;
+        const prompt = `Act as an elite personal training assistant named Sam. I am the head coach. 
+        Client: ${c.name} (${c.gender}, ${c.age}). Goal: ${c.goal}. Injuries: ${c.med || "None"}. 
+        Body: ${w}kg, ${pbf}% Fat. Macros: ${macros}. Recent Workouts: ${recentWorkouts}. 
+        Answer concisely based on this clinical data. Format with basic HTML (<b>, <br>) but NO markdown. 
+        Question: "${msg}"`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { 
@@ -846,17 +857,56 @@
             const data = await response.json(); 
             if(data.error) throw new Error(data.error.message);
             
-            // Remove loading indicator & append response
             document.getElementById(loadId).remove();
-            chatBox.innerHTML += `<div class="msg bot">${data.candidates[0].content.parts[0].text}</div>`;
+            chatBox.innerHTML += `<div class="chat-msg bot">${data.candidates[0].content.parts[0].text}</div>`;
         } catch(e) { 
             document.getElementById(loadId).remove();
-            chatBox.innerHTML += `<div class="msg bot" style="color:var(--danger);">Error connecting to AI. Check API Key.</div>`;
+            chatBox.innerHTML += `<div class="chat-msg bot" style="color:var(--danger);">Error connecting to Sam. Check API Key.</div>`;
         } finally {
             chatBox.scrollTop = chatBox.scrollHeight;
-            window.updateIcons();
         }
     };
+
+    // --- 3. VIP PORTAL STYLE PRINT REPORT ---
+    window.generateProgressPDF = () => { 
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+        
+        let bcaHtml = c.bca && c.bca.length ? `${c.bca[0].w}kg (Fat: ${c.bca[0].pbf}%)` : "No data";
+        let macroHtml = c.macros ? `${c.macros.p}g P | ${c.macros.c}g C | ${c.macros.f}g F` : "Not set";
+        let recentLogs = Object.keys(c.logs || {}).sort().reverse().slice(0, 5).map(d => `<div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0;"><b style="color:#0f172a;">${d}</b><br><span style="font-size:13px; color:#64748b;">${c.logs[d].map(l=>l.name).join(', ')}</span></div>`).join('');
+
+        const printDiv = document.createElement('div');
+        printDiv.id = 'ryalPrintArea';
+        printDiv.innerHTML = `
+            <div style="font-family: -apple-system, sans-serif; color: #0f172a; max-width: 800px; margin: 0 auto; padding:20px;">
+                <div style="text-align:center; margin-bottom:30px;">
+                    <h1 style="font-family:'Oswald', sans-serif; font-size:36px; margin:0;">${c.name}</h1>
+                    <div style="font-size:12px; color:#3b82f6; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-top:5px;">Lead Trainer: ${window.trainerProfile.name}</div>
+                </div>
+                
+                <div style="display:flex; gap:15px; margin-bottom:20px;">
+                    <div style="flex:1; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; text-align:center;">
+                        <h3 style="font-size:11px; color:#64748b; text-transform:uppercase; margin:0 0 10px 0; letter-spacing:1px;">Latest InBody</h3>
+                        <b style="font-size:20px; font-family:'Oswald', sans-serif;">${bcaHtml}</b>
+                    </div>
+                    <div style="flex:1; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; text-align:center;">
+                        <h3 style="font-size:11px; color:#64748b; text-transform:uppercase; margin:0 0 10px 0; letter-spacing:1px;">Prescribed Macros</h3>
+                        <b style="font-size:20px; font-family:'Oswald', sans-serif; color:#10b981;">${macroHtml}</b>
+                    </div>
+                </div>
+
+                <h3 style="font-size:14px; text-transform:uppercase; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:30px; letter-spacing:1px;">Workout History</h3>
+                ${recentLogs || "<p style='color:#64748b;'>No logs available.</p>"}
+                
+                <p style="text-align:center; font-size:10px; color:#94a3b8; margin-top:50px; text-transform:uppercase; letter-spacing:1px;">Generated securely via Ryal FitHub Pro OS</p>
+            </div>
+        `;
+        document.body.appendChild(printDiv);
+        window.print();
+        setTimeout(() => document.body.removeChild(printDiv), 1000);
+    };
+
 
     // --- 9. AI EXERCISE, MOBILITY & PLATEAU (GEMINI 2.5 FLASH) ---
     window.runPlateauAI = async () => {
@@ -929,7 +979,7 @@
         } catch(e) { window.showAlert("AI Failed"); } finally { btn.innerHTML = originalHtml; window.updateIcons(); }
     };
 
-    // --- 10. FIXED USDA MATH (FETCH MACROS) ---
+    // --- FIXED: HIGH-ACCURACY USDA MATCHER ---
     window.fetchMacros = async () => { 
         const food = document.getElementById('mbName').value; 
         const amt = parseFloat(document.getElementById('mbQty').value) || 1; 
@@ -941,12 +991,17 @@
         btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite; margin:0;"></i>`; window.updateIcons();
 
         try {
-            const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&pageSize=1`); 
+            // dataType=Foundation,SR Legacy forces the API to return whole/accurate foods, not weird branded barcodes
+            const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&dataType=Foundation,SR%20Legacy&pageSize=3`); 
+            
+            if(res.status === 429) throw new Error("RATE_LIMIT");
+
             const data = await res.json(); 
             
             if(data.foods && data.foods.length > 0) { 
                 const item = data.foods[0];
                 const nutrients = item.foodNutrients || []; 
+                
                 const getNut = (id) => { const nut = nutrients.find(x => x.nutrientId === id); return nut ? nut.value : 0; }; 
                 
                 let multiplier = 1;
@@ -963,10 +1018,14 @@
                 document.getElementById('mbP').value = Math.round(getNut(1003) * multiplier); 
                 document.getElementById('mbC').value = Math.round(getNut(1005) * multiplier); 
                 document.getElementById('mbF').value = Math.round(getNut(1004) * multiplier); 
-            } else { window.showAlert("Food not found in USDA database."); }
-        } catch(e) { window.showAlert("Failed to connect to USDA database."); } 
+            } else { window.showAlert(`No exact match for "${food}". Try a simpler term (e.g. "Egg" instead of "Boiled Eggs").`); }
+        } catch(e) { 
+            if (e.message === "RATE_LIMIT") window.showAlert("USDA API Limit Hit! Please wait a minute or use manual entry.");
+            else window.showAlert("Failed to connect to USDA database. Check your internet connection."); 
+        } 
         finally { btn.innerHTML = oldHtml; window.updateIcons(); }
     };
+
 
     // --- 11. DASHBOARD RENDERING ---
     window.render = () => {
@@ -1144,60 +1203,159 @@
     window.renderMobility = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('mobList').innerHTML=c.mobility.map(l=>`<div class="history-row" style="font-size:12px; background:var(--card); padding:10px; border-radius:10px; margin-bottom:5px;"><span><b>${l.muscle}</b>: ${l.exercise}<br><span style="color:var(--text-muted);font-size:10px;">${l.time}s x ${l.sets} sets | ${l.date}</span></span><button class="btn-action danger" onclick="delMobility(${l.id})"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('mobList').style.display=c.mobility.length?'block':'none'; window.updateIcons(); };
     window.delMobility = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.mobility=c.mobility.filter(l=>l.id!==id); window.syncToCloud().then(window.renderMobility); };
 
-    // --- RESTORED: PRINTABLE BILL / REPORT GENERATOR ---
-    window.generateProgressPDF = () => { 
-        const c = window.clients.find(x => x.id === window.curID);
-        if(!c) return;
-        
-        let bcaHtml = c.bca && c.bca.length ? `${c.bca[0].w}kg (Fat: ${c.bca[0].pbf}%)` : "No data logged.";
-        let macroHtml = c.macros ? `${c.macros.p}g Pro | ${c.macros.c}g Carb | ${c.macros.f}g Fat` : "Not generated.";
-        let recentLogs = Object.keys(c.logs || {}).sort().reverse().slice(0, 5).map(d => `<li style="padding:8px 0;border-bottom:1px solid #eee;"><strong>${d}:</strong> ${c.logs[d].map(l=>l.name).join(', ')}</li>`).join('');
 
-        const printDiv = document.createElement('div');
-        printDiv.id = 'ryalPrintArea';
-        printDiv.innerHTML = `
-            <div style="font-family: 'Helvetica Neue', sans-serif; color: #000; max-width: 800px; margin: 0 auto;">
-                <h1 style="border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase;">Clinical Progress Report</h1>
-                <p><strong>Trainer:</strong> ${window.trainerProfile.name}</p>
-                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <h2 style="margin-top:0;">Client: ${c.name}</h2>
-                    <p><strong>Goal:</strong> ${c.goal || 'N/A'} | <strong>Age:</strong> ${c.age || 'N/A'} | <strong>Phone:</strong> ${c.phone || 'N/A'}</p>
-                    <p><strong>Current Stats:</strong> ${bcaHtml}</p>
-                    <p><strong>Prescribed Macros:</strong> ${macroHtml}</p>
-                </div>
-                <h3>Recent Activity Log</h3>
-                <ul style="list-style:none; padding:0;">${recentLogs || "<li>No workouts logged yet.</li>"}</ul>
-                <p style="text-align:center; font-size:12px; margin-top:40px; color:#666;">Generated securely via Ryal FitHub Cloud</p>
-            </div>
-        `;
-        document.body.appendChild(printDiv);
-        window.print();
-        setTimeout(() => document.body.removeChild(printDiv), 1000);
-    };
-
+    // --- RESTORED: PROFESSIONAL LEDGER REPORT ---
     window.generateMonthlyReportPDF = () => { 
-        const month = document.getElementById('reportMonthInput').value;
-        const totalEarned = document.getElementById('statRevenue').innerText;
-        const totalSess = document.getElementById('statSessions').innerText;
+        const month = document.getElementById('reportMonthInput').value || window.today.slice(0,7);
 
+        // 1. PT REVENUE DATA
+        let ptRows = '';
+        let totalPtRev = 0;
+        let sr = 1;
+
+        window.clients.forEach(c => {
+            const logs = c.logs || {};
+            // Count how many unique days this client was trained in the selected month
+            const monthDates = Object.keys(logs).filter(d => d.startsWith(month) && logs[d].length > 0);
+            const doneMonth = monthDates.length;
+
+            if(doneMonth > 0) {
+                const totalSess = c.sess || 1;
+                const remSess = totalSess - Object.keys(logs).length;
+                const cutSess = ((c.pay || 0) / (1 + parseFloat(c.gst || 0)) * parseFloat(c.ret || 0)) / totalSess;
+                const earned = doneMonth * cutSess;
+                totalPtRev += earned;
+
+                ptRows += `
+                <tr>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${sr++}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;"><b>${c.name}</b></td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${c.receipt || '-'}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">₹${c.pay || 0}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${c.start || '-'}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${c.end || '-'}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${totalSess}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;"><b>${doneMonth}</b></td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">${remSess}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;">₹${cutSess.toFixed(2)}</td>
+                    <td style="padding:12px 5px; border-bottom:1px solid #eee;"><b style="color:#3b82f6;">₹${earned.toFixed(2)}</b></td>
+                </tr>`;
+            }
+        });
+
+        // 2. ATTENDANCE DATA
+        let attRows = '';
+        let dPres = 0, dWO = 0, dAbs = 0, dLate = 0, totalSal = 0;
+
+        const monthShifts = window.shifts.filter(s => s.date.startsWith(month)).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        monthShifts.forEach(s => {
+            let statusText = s.status;
+            let statusColor = "#0f172a";
+
+            if (s.status === 'Absent') {
+                statusColor = "#ef4444"; dAbs++;
+            } else if (s.status === 'Week Off') {
+                statusColor = "#3b82f6"; dWO++;
+            } else if (s.status === 'Present') {
+                dPres++;
+                if (s.isLate) {
+                    statusText = "Present (Late)"; statusColor = "#f59e0b"; dLate++;
+                } else if (s.isHalfDay) {
+                    statusText = "Present (Half Day)"; statusColor = "#f59e0b";
+                } else {
+                    statusColor = "#10b981";
+                }
+            }
+
+            let hours = "-";
+            if(s.inTime && s.outTime) {
+                const [inH, inM] = s.inTime.split(':').map(Number);
+                const [outH, outM] = s.outTime.split(':').map(Number);
+                let diff = (outH + outM/60) - (inH + inM/60);
+                if(diff < 0) diff += 24;
+                hours = diff.toFixed(1) + " hrs";
+            }
+
+            totalSal += (s.pay || 0);
+
+            attRows += `
+            <tr>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee;">${s.date}</td>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee; color:${statusColor}; font-weight:700;">${statusText}</td>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee;">${window.formatTime(s.inTime) || '-'}</td>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee;">${window.formatTime(s.outTime) || '-'}</td>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee;">${hours}</td>
+                <td style="padding:12px 5px; border-bottom:1px solid #eee;">₹${(s.pay || 0).toFixed(2)}</td>
+            </tr>`;
+        });
+
+        // Generate the Document
         const printDiv = document.createElement('div');
         printDiv.id = 'ryalPrintArea';
         printDiv.innerHTML = `
-            <div style="font-family: 'Helvetica Neue', sans-serif; color: #000; max-width: 800px; margin: 0 auto;">
-                <h1 style="border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase;">Revenue & Activity Statement</h1>
-                <p><strong>Trainer:</strong> ${window.trainerProfile.name}</p>
-                <div style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <h2 style="margin-top:0;">Period: ${month || window.today.slice(0,7)}</h2>
-                    <p><strong>Current Day Revenue:</strong> ${totalEarned}</p>
-                    <p><strong>Current Day Sessions:</strong> ${totalSess}</p>
+            <div style="font-family: -apple-system, sans-serif; color: #0f172a; max-width: 900px; margin: 0 auto; padding:20px; font-size:12px;">
+                <div style="text-align:center; margin-bottom:30px; border-bottom:2px solid #0f172a; padding-bottom:15px;">
+                    <h1 style="font-family:'Oswald', sans-serif; font-size:24px; margin:0; text-transform:uppercase; letter-spacing:1px;">${window.trainerProfile.name}'s Studio • Trainer Report</h1>
+                    <div style="font-size:14px; font-weight:600; color:#64748b; margin-top:5px;">Month: ${month} | Trainer: ${window.trainerProfile.name.split(' ')[0]}</div>
                 </div>
-                <p style="text-align:center; font-size:12px; margin-top:40px; color:#666;">Generated securely via Ryal FitHub Cloud</p>
+
+                <h3 style="font-size:14px; text-transform:uppercase; color:#333; margin-bottom:10px;">1. Personal Training (PT) Revenue Tracker</h3>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:30px; font-size:11px; text-align:left;">
+                    <thead>
+                        <tr style="border-top:1px solid #ccc; border-bottom:1px solid #ccc; color:#64748b;">
+                            <th style="padding:10px 5px;">SR.</th>
+                            <th style="padding:10px 5px;">CLIENT NAME</th>
+                            <th style="padding:10px 5px;">RECEIPT NO</th>
+                            <th style="padding:10px 5px;">PKG ₹</th>
+                            <th style="padding:10px 5px;">START DATE</th>
+                            <th style="padding:10px 5px;">END DATE</th>
+                            <th style="padding:10px 5px;">TOTAL SESS.</th>
+                            <th style="padding:10px 5px;">DONE (MONTH)</th>
+                            <th style="padding:10px 5px;">REM. SESS</th>
+                            <th style="padding:10px 5px;">YOUR CUT/SESS</th>
+                            <th style="padding:10px 5px;">EARNED (MONTH)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ptRows || `<tr><td colspan="11" style="padding:10px 5px; text-align:center;">No PT sessions logged this month.</td></tr>`}
+                    </tbody>
+                </table>
+                <div style="text-align:right; font-size:14px; font-weight:800; margin-bottom:40px;">Total PT Revenue (${month}): <span style="color:#3b82f6;">₹${totalPtRev.toFixed(2)}</span></div>
+
+                <h3 style="font-size:14px; text-transform:uppercase; color:#333; margin-bottom:10px;">2. Base Salary & Attendance Chart</h3>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:11px; text-align:left;">
+                    <thead>
+                        <tr style="border-top:1px solid #ccc; border-bottom:1px solid #ccc; color:#64748b;">
+                            <th style="padding:10px 5px;">DATE</th>
+                            <th style="padding:10px 5px;">STATUS</th>
+                            <th style="padding:10px 5px;">IN TIME</th>
+                            <th style="padding:10px 5px;">OUT TIME</th>
+                            <th style="padding:10px 5px;">HOURS</th>
+                            <th style="padding:10px 5px;">BASE AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${attRows || `<tr><td colspan="6" style="padding:10px 5px; text-align:center;">No attendance logged this month.</td></tr>`}
+                    </tbody>
+                </table>
+
+                <div style="display:flex; justify-content:space-between; background:#f8fafc; padding:15px 25px; border-radius:12px; border:1px solid #e2e8f0; text-align:center; margin-bottom:40px;">
+                    <div><div style="font-size:10px; font-weight:800; color:#64748b;">DAYS PRESENT</div><div style="font-size:18px; font-weight:800;">${dPres}</div></div>
+                    <div><div style="font-size:10px; font-weight:800; color:#64748b;">WEEK OFFS</div><div style="font-size:18px; font-weight:800;">${dWO}</div></div>
+                    <div><div style="font-size:10px; font-weight:800; color:#ef4444;">ABSENT</div><div style="font-size:18px; font-weight:800; color:#ef4444;">${dAbs}</div></div>
+                    <div><div style="font-size:10px; font-weight:800; color:#f59e0b;">DAYS LATE</div><div style="font-size:18px; font-weight:800; color:#f59e0b;">${dLate}</div></div>
+                    <div><div style="font-size:10px; font-weight:800; color:#64748b;">TOTAL SALARY PAY</div><div style="font-size:18px; font-weight:800;">₹${totalSal.toFixed(2)}</div></div>
+                </div>
+
+                <p style="text-align:center; font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;">Generated securely via Ryal FitHub Clinical Engine</p>
             </div>
         `;
         document.body.appendChild(printDiv);
         window.print();
         setTimeout(() => document.body.removeChild(printDiv), 1000);
     };
+
 
 
     // --- 17. VIP PORTAL DASHBOARD ---
