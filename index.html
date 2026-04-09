@@ -535,6 +535,15 @@
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// --- MOBILE DEBUGGER ---
+window.onerror = function(msg, url, line, col, error) {
+    alert("CRITICAL ERROR: " + msg + "\nLine: " + line);
+};
+window.onunhandledrejection = function(event) {
+    alert("DATABASE ERROR: " + event.reason);
+};
+
+
     // ==========================================
     // 1. CORE CONFIGURATION & STATE VARIABLES
     // ==========================================
