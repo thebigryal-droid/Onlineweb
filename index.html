@@ -566,53 +566,93 @@
     window.sendWaReminder = () => { const c=window.clients.find(x=>x.id===window.curID); const msg=`Hello ${c.name},\nReminder for your upcoming session at ${window.formatTime(c.slot||"")}.\nSee you soon! 💪\n-${window.trainerProfile.name.split(' ')[0]}`; window.open(`https://wa.me/${(c.phone||"").replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`); };
     window.generateVIPLink = () => { navigator.clipboard.writeText(window.location.origin+window.location.pathname+'?vip='+window.curID); window.showAlert("VIP Link Copied to clipboard!"); document.getElementById('clientMenu').style.display='none'; };
 
-    // --- RESTORED: TIMELINE GALLERY & SLIDESHOW ---
-    window.uploadToGallery = (e) => { const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=function(ev){ const i=new Image(); i.onload=async function(){ const cv=document.createElement('canvas'); cv.width=300; cv.height=i.height*(300/i.width); cv.getContext('2d').drawImage(i,0,0,cv.width,cv.height); const c=window.clients.find(x=>x.id===window.curID); c.gallery.push({id:Date.now(), date:document.getElementById('gallerySearchDate').value||window.today, img:cv.toDataURL('image/jpeg',0.6)}); c.gallery.sort((a,b)=>new Date(b.date)-new Date(a.date)); await window.syncToCloud(); window.renderGallery(); }; i.src=ev.target.result; }; r.readAsDataURL(f); };
-        // --- NEW AUTOMATIC CAROUSEL LOGIC ---
+    // --- RESTORED: TIMELINE GALLERY & SLIDESHOW     // --- TIMELINE GALLERY & AUTO-CAROUSEL ---
+    window.uploadToGallery = (e) => { 
+        const f = e.target.files[0]; 
+        if(!f) return; 
+        const r = new FileReader(); 
+        r.onload = function(ev) { 
+            const i = new Image(); 
+            i.onload = async function() { 
+                const cv = document.createElement('canvas'); 
+                cv.width = 300; 
+                cv.height = i.height * (300 / i.width); 
+                cv.getContext('2d').drawImage(i, 0, 0, cv.width, cv.height); 
+                const c = window.clients.find(x => x.id === window.curID); 
+                
+                // CRITICAL FIX: Ensure gallery array exists for new clients
+                if (!c.gallery) c.gallery = []; 
+                
+                c.gallery.push({
+                    id: Date.now(), 
+                    date: document.getElementById('gallerySearchDate').value || window.today, 
+                    img: cv.toDataURL('image/jpeg', 0.6)
+                }); 
+                c.gallery.sort((a,b) => new Date(b.date) - new Date(a.date)); 
+                await window.syncToCloud(); 
+                window.renderGallery(); 
+            }; 
+            i.src = ev.target.result; 
+        }; 
+        r.readAsDataURL(f); 
+    };
+
     window.galleryScrollDirection = 1;
     window.galleryAutoScroller = null;
 
-    window.renderGallery = () => {
-        const c = window.clients.find(x => x.id === window.curID);
+    window.renderGallery = () => { 
+        const c = window.clients.find(x => x.id === window.curID); 
         const grid = document.getElementById('galleryGrid');
-        
+        if(!grid) return;
+
         if(!c.gallery || c.gallery.length === 0) { 
             grid.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; width:100%;">No photos uploaded yet.</div>`; 
-            if (window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
+            if(window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
             return; 
-        }
+        } 
         
-        let htmlStr = "";
-        c.gallery.forEach((p) => {
-            htmlStr += `<div class="gallery-item" style="animation: fadeIn 0.4s ease forwards;">
+        // Render images with smooth fade-in animation
+        grid.innerHTML = c.gallery.map(p => `
+            <div class="gallery-item" style="animation: fadeIn 0.4s ease forwards;">
                 <img src="${p.img}" class="gallery-img" style="pointer-events:none;">
                 <div class="gallery-date">${p.date}</div>
-                <button class="gallery-del" onclick="delGalleryPhoto(${p.id})"><i data-feather="x" style="width:14px;color:white;"></i></button>
-            </div>`;
-        });
-        grid.innerHTML = htmlStr; 
+                <button class="gallery-del" onclick="delGalleryPhoto(${p.id})">
+                    <i data-feather="x" style="width:14px;color:white;"></i>
+                </button>
+            </div>
+        `).join(''); 
         
-        if(window.feather) setTimeout(() => window.feather.replace(), 10);
+        if(window.feather) setTimeout(() => window.feather.replace(), 10); 
 
-        // Start the Auto-Scroller Engine
+        // Auto-Scroll Engine
         if(window.galleryAutoScroller) clearInterval(window.galleryAutoScroller);
         
         window.galleryAutoScroller = setInterval(() => {
-            if (!grid || grid.children.length < 2) return;
+            if(grid.children.length < 2) return; // Don't scroll if there is only 1 image
             
-            // Check if we hit the far right edge
-            if (grid.scrollLeft >= (grid.scrollWidth - grid.clientWidth - 5)) {
-                window.galleryScrollDirection = -1; // Reverse left
-            } 
-            // Check if we hit the starting left edge
-            else if (grid.scrollLeft <= 0) {
-                window.galleryScrollDirection = 1; // Move right
+            const maxScroll = grid.scrollWidth - grid.clientWidth;
+            
+            // Reverse direction if we hit the edges
+            if(grid.scrollLeft >= maxScroll - 5) {
+                window.galleryScrollDirection = -1; // Go left
+            } else if(grid.scrollLeft <= 0) {
+                window.galleryScrollDirection = 1;  // Go right
             }
             
-            // Slide by 145 pixels (roughly one image + gap)
+            // Slide by 145px (image width + gap)
             grid.scrollBy({ left: 145 * window.galleryScrollDirection, behavior: 'smooth' });
-        }, 2500);
+        }, 2500); // Triggers every 2.5 seconds
     };
+
+    window.delGalleryPhoto = (id) => { 
+        window.showConfirm("Delete this photo?", async () => {
+            const c = window.clients.find(x => x.id === window.curID); 
+            c.gallery = c.gallery.filter(p => p.id !== id); 
+            await window.syncToCloud(); 
+            window.renderGallery(); 
+        });
+    };
+
 
     window.delGalleryPhoto = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.gallery=c.gallery.filter(p=>p.id!==id); window.syncToCloud().then(window.renderGallery); };
     //window.startSlideshow = (idx) => { const c=window.clients.find(x=>x.id===window.curID); if(!c.gallery.length) return; window.currentSlideIdx = idx!==undefined?idx:0; document.getElementById('slideshowModal').style.display='flex'; window.updateSlide(); clearInterval(window.slideInterval); window.slideInterval=setInterval(window.nextSlide, 2500); };
