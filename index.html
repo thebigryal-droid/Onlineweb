@@ -851,11 +851,19 @@
 
 
     window.delGalleryPhoto = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.gallery=c.gallery.filter(p=>p.id!==id); window.syncToCloud().then(window.renderGallery); };
-    //window.startSlideshow = (idx) => { const c=window.clients.find(x=>x.id===window.curID); if(!c.gallery.length) return; window.currentSlideIdx = idx!==undefined?idx:0; document.getElementById('slideshowModal').style.display='flex'; window.updateSlide(); clearInterval(window.slideInterval); window.slideInterval=setInterval(window.nextSlide, 2500); };
-    //window.updateSlide = () => { const p=window.clients.find(x=>x.id===window.curID).gallery[window.currentSlideIdx]; document.getElementById('slideImg').src=p.img; document.getElementById('slideDate').innerText=p.date; };
-    //window.nextSlide = () => { const c=window.clients.find(x=>x.id===window.curID); window.currentSlideIdx++; if(window.currentSlideIdx>=c.gallery.length) window.currentSlideIdx=0; window.updateSlide(); };
-    //window.closeSlideshow = () => { clearInterval(window.slideInterval); document.getElementById('slideshowModal').style.display='none'; };
-    window.searchGalleryByDate = (d) => { const c=window.clients.find(x=>x.id===window.curID); const idx=c.gallery.findIndex(p=>p.date===d); if(idx!==-1) window.startSlideshow(idx); };
+    
+    window.searchGalleryByDate = (d) => { 
+    const c = window.clients.find(x => x.id === window.curID); 
+    const idx = c.gallery.findIndex(p => p.date === d); 
+    if(idx !== -1) {
+        const grid = document.getElementById('galleryGrid');
+        // Scroll the grid to the exact position of the image (each image is ~145px wide)
+        grid.scrollTo({ left: idx * 145, behavior: 'smooth' });
+    } else {
+        window.showAlert("No photo found for this date.");
+    }
+};
+
 
     // --- RESTORED: CARDIO & MOBILITY ---
     window.saveCardio = async () => { const c=window.clients.find(x=>x.id===window.curID); c.cardio.push({id:Date.now(), date:document.getElementById('cardioDate').value||window.today, type:document.getElementById('cardioType').value, dist:document.getElementById('cardioDist').value, time:document.getElementById('cardioTime').value}); c.cardio.sort((a,b)=>new Date(b.date)-new Date(a.date)); await window.syncToCloud(); window.renderCardio(); };
@@ -866,8 +874,70 @@
     window.renderMobility = () => { const c=window.clients.find(x=>x.id===window.curID); document.getElementById('mobList').innerHTML=c.mobility.map(l=>`<div class="history-row" style="font-size:12px; background:var(--card); padding:10px; border-radius:10px; margin-bottom:5px;"><span><b>${l.muscle}</b>: ${l.exercise}<br><span style="color:var(--text-muted);font-size:10px;">${l.time}s x ${l.sets} sets | ${l.date}</span></span><button class="btn-action danger" onclick="delMobility(${l.id})"><i data-feather="trash-2"></i></button></div>`).join(''); document.getElementById('mobList').style.display=c.mobility.length?'block':'none'; window.updateIcons(); };
     window.delMobility = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.mobility=c.mobility.filter(l=>l.id!==id); window.syncToCloud().then(window.renderMobility); };
 
-    // --- RESTORED: FETCH MACROS & PRINT REPORTS ---
-    window.fetchMacros = async () => { const f=document.getElementById('mbName').value; if(!f) return; try{ const res=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(f)}&pageSize=1`); const data=await res.json(); if(data.foods&&data.foods.length){ let n=data.foods[0].foodNutrients; let get=(id)=>n.find(x=>x.nutrientId===id)?.value||0; document.getElementById('mbP').value=Math.round(get(1003)); document.getElementById('mbC').value=Math.round(get(1005)); document.getElementById('mbF').value=Math.round(get(1004)); } }catch(e){} };
+    // --- FIXED: USDA NUTRITION FETCHER ---
+    window.fetchMacros = async () => { 
+        const food = document.getElementById('mbName').value; 
+        const amt = parseFloat(document.getElementById('mbQty').value) || 1; 
+        const unit = document.getElementById('mbUnit').value;
+        
+        if(!food) { window.showAlert("Enter a food name first!"); return; }
+        
+        const btn = document.getElementById('btnFetchMacro'); 
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-feather="loader" style="animation:spin 1s linear infinite;"></i>`; 
+        window.updateIcons();
+
+        try {
+            // Fetch from USDA Database
+            const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(food)}&pageSize=1`); 
+            const data = await res.json(); 
+            
+            if(data.foods && data.foods.length > 0) { 
+                const item = data.foods[0];
+                const nutrients = item.foodNutrients || []; 
+                
+                // USDA returns baseline values per 100g
+                const getNut = (id) => {
+                    const nut = nutrients.find(x => x.nutrientId === id);
+                    return nut ? nut.value : 0;
+                }; 
+                
+                let multiplier = 1;
+
+                if (unit === 'g') {
+                    // If user selects Grams: (e.g., 200g / 100 = 2x multiplier)
+                    multiplier = amt / 100;
+                } else if (unit === 'qty') {
+                    // If user selects Qty: Find USDA serving size (e.g., 1 Egg = ~50g)
+                    let portionWeight = 100; // Default fallback
+                    
+                    if (item.servingSize) {
+                        portionWeight = item.servingSize;
+                    } else if (item.foodPortions && item.foodPortions.length > 0) {
+                        portionWeight = item.foodPortions[0].gramWeight;
+                    } else if (item.foodMeasures && item.foodMeasures.length > 0) {
+                        portionWeight = item.foodMeasures[0].gramWeight;
+                    }
+                    
+                    // Calculate multiplier: (10 eggs * 50g) / 100 = 5x multiplier
+                    multiplier = (amt * portionWeight) / 100;
+                }
+
+                // Apply multiplier and populate inputs
+                document.getElementById('mbP').value = Math.round(getNut(1003) * multiplier); 
+                document.getElementById('mbC').value = Math.round(getNut(1005) * multiplier); 
+                document.getElementById('mbF').value = Math.round(getNut(1004) * multiplier); 
+            } else {
+                window.showAlert("Food not found in USDA database.");
+            }
+        } catch(e) {
+            window.showAlert("Failed to connect to USDA database.");
+        } finally {
+            btn.innerHTML = oldHtml;
+            window.updateIcons();
+        }
+    };
+
     window.generateProgressPDF = () => { setTimeout(()=>window.print(), 500); };
     window.generateMonthlyReportPDF = () => { setTimeout(()=>window.print(), 500); };
 
