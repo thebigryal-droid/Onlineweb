@@ -495,6 +495,13 @@
             <input type="text" id="splitSelect" placeholder="Muscle Group" list="muscleDataList" oninput="loadSplit(this.value)">
             <datalist id="muscleDataList"></datalist>
             
+            <div class="section active">
+        <h2 onclick="toggleSec('sec-workout-hist')"><span><i data-feather="clock" style="color:var(--info);margin-right:8px;"></i> Workout History</span> <i data-feather="chevron-down" class="chevron"></i></h2>
+        <div class="collapsible" id="clientWorkoutHistoryPane" style="display:block;">
+            </div>
+            </div>
+
+            
             <div style="display:flex; gap:8px;"><input type="text" id="aiWorkoutInput" placeholder="AI: Goal (e.g. Chest)" style="flex:2;margin-bottom:0;border-color:#8b5cf6;"><button class="btn-main" id="aiGenerateBtn" style="background:#8b5cf6;color:white;flex:1;margin-bottom:0;padding:10px;" onclick="generateAIExercises(false)">Get</button><button class="btn-sub" id="aiRefreshBtn" style="color:#8b5cf6;border-color:#8b5cf6;margin-bottom:0;padding:10px;" onclick="generateAIExercises(true)"><i data-feather="refresh-cw" style="margin:0;"></i></button></div>
             <div id="exTagsContainer" style="display:flex; flex-wrap:wrap; gap:10px; margin:15px 0;"></div>
             
@@ -512,19 +519,23 @@
     </div>
 </div>
 
-    <div class="section active" id="sec-sam" style="border-left:4px solid var(--ai-glow);">
-        <h2 onclick="toggleSec('sec-sam')"><span><i data-feather="cpu" style="color:var(--ai-glow);margin-right:8px;"></i> Sam (AI Co-Pilot)</span> <i data-feather="chevron-down" class="chevron"></i></h2>
-        <div class="collapsible">
-            <div id="chatMessages" style="max-height:250px; overflow-y:auto; padding:15px; background:rgba(0,0,0,0.05); border-radius:12px; margin-bottom:15px; border:1px solid var(--border);">
-                </div>
-            <div style="display:flex; gap:8px;">
-                <input type="text" id="aiChatInput" placeholder="Ask Sam about plateaus, macros, or workouts..." style="margin-bottom:0; flex:1; border-color:var(--ai-glow);">
-                <button class="btn-main" style="width:auto; padding:12px 18px; margin-bottom:0; background:var(--ai-glow); color:white;" onclick="sendAiChatMessage()">
-                    <i data-feather="send" style="margin:0;"></i>
-                </button>
+<div id="aiAssistantOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:90000; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
+    <div class="chat-container" style="width:90%; max-width:400px; height:80vh; background:var(--bg); border-radius:24px; display:flex; flex-direction:column; border:1px solid var(--ai-glow); box-shadow:0 0 30px rgba(139, 92, 246, 0.2); overflow:hidden;">
+        <div class="chat-header" style="padding:20px; background:var(--card); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <b style="font-size:14px; display:flex; align-items:center; gap:8px; color:var(--text);"><i data-feather="cpu" style="color:var(--ai-glow);"></i> Sam (AI Co-Pilot)</b>
+            <i data-feather="x" onclick="closeAIChat()" style="cursor:pointer; color:var(--text-muted);"></i>
+        </div>
+        <div class="chat-messages" id="chatMessages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:15px;">
             </div>
+        <div class="chat-input-area" style="padding:15px; background:var(--card); border-top:1px solid var(--border); display:flex; gap:10px;">
+            <input type="text" id="aiChatInput" placeholder="Ask Sam anything..." style="margin-bottom:0; flex:1;">
+            <button class="btn-main" style="width:auto; padding:12px 18px; margin-bottom:0; background:var(--ai-glow); color:white;" onclick="sendAiChatMessage()">
+                <i data-feather="send" style="margin:0;"></i>
+            </button>
         </div>
     </div>
+</div>
+
 
 
 <div id="restTimerUI"><i data-feather="clock"></i> <span id="timerText">01:30</span><button onclick="stopRestTimer()" style="background:none;border:none;color:var(--danger);display:flex;"><i data-feather="x-circle" style="margin:0;"></i></button></div>
@@ -811,13 +822,31 @@
     };
 
     // --- 2. SAM THE AI: CLIENT-EMBEDDED LOGIC ---
-    // Update openOv to clear Sam's chat when opening a new client
-    const originalOpenOv = window.openOv;
-    window.openOv = (id) => { 
-        originalOpenOv(id);
-        const c = window.clients.find(x => x.id === id);
-        document.getElementById('chatMessages').innerHTML = `<div class="chat-msg bot">Hello coach! I'm <b>Sam</b>. I've loaded <b>${c.name}'s</b> profile, stats, and recent logs. How can we optimize their protocol today?</div>`;
+    // --- SAM THE AI MODAL CONTROLS ---
+    window.openAIChat = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+        document.getElementById('aiAssistantOverlay').style.display = 'flex';
+        
+        // Sam says hello ONLY when you open the chat popup
+        document.getElementById('chatMessages').innerHTML = `<div class="msg bot" style="background:var(--card); padding:12px; border-radius:12px; border:1px solid var(--border); align-self:flex-start; max-width:85%;">Hello coach! I'm <b>Sam</b>. I've loaded <b>${c.name}'s</b> profile, stats, and recent logs. How can we optimize their protocol today?</div>`;
     };
+    
+    window.closeAIChat = () => { 
+        document.getElementById('aiAssistantOverlay').style.display = 'none'; 
+    };
+
+    // --- LOAD WORKOUT HISTORY WHEN PROFILE OPENS ---
+    const originalOpenOv2 = window.openOv;
+    window.openOv = (id) => { 
+        originalOpenOv2(id);
+        
+        // This ensures your beautiful dropdown logs load when you click a client
+        if (typeof window.renderClientHistory === "function") {
+            window.renderClientHistory();
+        }
+    };
+
 
     window.sendAiChatMessage = async () => {
         const inputEl = document.getElementById('aiChatInput');
@@ -868,6 +897,20 @@
     };
 
     // --- 3. VIP PORTAL STYLE PRINT REPORT ---
+    // --- BULLETPROOF PRINTING (IFRAME METHOD) ---
+    window.ryalPrint = (htmlContent) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`<html><head><title>Report</title><style>body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; }</style></head><body>${htmlContent}</body></html>`);
+        doc.close();
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 2000);
+    };
+
     window.generateProgressPDF = () => { 
         const c = window.clients.find(x => x.id === window.curID);
         if(!c) return;
@@ -876,15 +919,12 @@
         let macroHtml = c.macros ? `${c.macros.p}g P | ${c.macros.c}g C | ${c.macros.f}g F` : "Not set";
         let recentLogs = Object.keys(c.logs || {}).sort().reverse().slice(0, 5).map(d => `<div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0;"><b style="color:#0f172a;">${d}</b><br><span style="font-size:13px; color:#64748b;">${c.logs[d].map(l=>l.name).join(', ')}</span></div>`).join('');
 
-        const printDiv = document.createElement('div');
-        printDiv.id = 'ryalPrintArea';
-        printDiv.innerHTML = `
-            <div style="font-family: -apple-system, sans-serif; color: #0f172a; max-width: 800px; margin: 0 auto; padding:20px;">
+        const html = `
+            <div style="max-width: 800px; margin: 0 auto; padding:20px;">
                 <div style="text-align:center; margin-bottom:30px;">
                     <h1 style="font-family:'Oswald', sans-serif; font-size:36px; margin:0;">${c.name}</h1>
                     <div style="font-size:12px; color:#3b82f6; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-top:5px;">Lead Trainer: ${window.trainerProfile.name}</div>
                 </div>
-                
                 <div style="display:flex; gap:15px; margin-bottom:20px;">
                     <div style="flex:1; background:#f8fafc; padding:20px; border-radius:16px; border:1px solid #e2e8f0; text-align:center;">
                         <h3 style="font-size:11px; color:#64748b; text-transform:uppercase; margin:0 0 10px 0; letter-spacing:1px;">Latest InBody</h3>
@@ -895,16 +935,10 @@
                         <b style="font-size:20px; font-family:'Oswald', sans-serif; color:#10b981;">${macroHtml}</b>
                     </div>
                 </div>
-
                 <h3 style="font-size:14px; text-transform:uppercase; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:30px; letter-spacing:1px;">Workout History</h3>
                 ${recentLogs || "<p style='color:#64748b;'>No logs available.</p>"}
-                
-                <p style="text-align:center; font-size:10px; color:#94a3b8; margin-top:50px; text-transform:uppercase; letter-spacing:1px;">Generated securely via Ryal FitHub Pro OS</p>
-            </div>
-        `;
-        document.body.appendChild(printDiv);
-        window.print();
-        setTimeout(() => document.body.removeChild(printDiv), 1000);
+            </div>`;
+        window.ryalPrint(html);
     };
 
 
@@ -1062,7 +1096,7 @@
     window.selSplitEx = (n, el) => { document.querySelectorAll('.ex-tag').forEach(e=>e.classList.remove('active')); el.classList.add('active'); window.curExName = n; document.getElementById('curEx').innerText = n; window.generateSetInputs(); document.getElementById('setForm').style.display='block'; };
     window.searchEx = (v) => { const r = document.getElementById('searchRes'); if(v.length<2) return r.style.display='none'; let m=[]; Object.values(window.workoutDB).forEach(l=>l.forEach(e=>{if(e.toLowerCase().includes(v.toLowerCase())&&!m.includes(e)) m.push(e);})); r.innerHTML = m.map(ex=>`<div style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="selSplitEx('${ex}', this);document.getElementById('searchRes').style.display='none';">${ex}</div>`).join(''); r.style.display='block'; };
     window.generateSetInputs = () => { let c = parseInt(document.getElementById('numSets').value)||1; let h=""; for(let i=1;i<=c;i++) h+=`<div style="display:flex;gap:5px;margin-bottom:5px;align-items:center;"><span style="font-size:10px;width:30px;">S${i}</span><input type="number" id="inW_${i}" placeholder="kg" style="margin:0;"><input type="number" id="inR_${i}" placeholder="Reps" style="margin:0;"></div>`; document.getElementById('setInputsContainer').innerHTML=h; };
-    window.saveExercise = async () => { const d = document.getElementById('logDate').value; const wName = document.getElementById('logWorkoutName').value; let sets=[]; const c=parseInt(document.getElementById('numSets').value)||1; for(let i=1;i<=c;i++){ let w=document.getElementById(`inW_${i}`).value; let r=document.getElementById(`inR_${i}`).value; if(w||r) sets.push({set:i,w,r}); } if(!sets.length) return; const cl = window.clients.find(x=>x.id===window.curID); if(!cl.logs[d]) cl.logs[d]=[]; cl.logs[d].push({id:Date.now(), workoutName:wName, name:window.curExName, sets}); await window.syncToCloud(); document.getElementById('setForm').style.display='none'; window.renderTonnageChart(); window.render(); };
+    window.saveExercise = async () => { const d = document.getElementById('logDate').value; const wName = document.getElementById('logWorkoutName').value; let sets=[]; const c=parseInt(document.getElementById('numSets').value)||1; for(let i=1;i<=c;i++){ let w=document.getElementById(`inW_${i}`).value; let r=document.getElementById(`inR_${i}`).value; if(w||r) sets.push({set:i,w,r}); } if(!sets.length) return; const cl = window.clients.find(x=>x.id===window.curID); if(!cl.logs[d]) cl.logs[d]=[]; cl.logs[d].push({id:Date.now(), workoutName:wName, name:window.curExName, sets}); await window.syncToCloud(); document.getElementById('setForm').style.display='none'; window.renderTonnageChart(); window.render(); window.renderClientHistory(); };
     
     window.renderTonnageChart = () => { 
         const c = window.clients.find(x => x.id === window.curID); 
@@ -1204,7 +1238,7 @@
     window.delMobility = (id) => { const c=window.clients.find(x=>x.id===window.curID); c.mobility=c.mobility.filter(l=>l.id!==id); window.syncToCloud().then(window.renderMobility); };
 
 
-    // --- RESTORED: PROFESSIONAL LEDGER REPORT ---
+    // --- RESTORED: PROFESSIONAL LEDGER REPORT (IFRAME PRINT) ---
     window.generateMonthlyReportPDF = () => { 
         const month = document.getElementById('reportMonthInput').value || window.today.slice(0,7);
 
@@ -1290,10 +1324,8 @@
             </tr>`;
         });
 
-        // Generate the Document
-        const printDiv = document.createElement('div');
-        printDiv.id = 'ryalPrintArea';
-        printDiv.innerHTML = `
+        // 3. GENERATE THE HTML STRING
+        const htmlContent = `
             <div style="font-family: -apple-system, sans-serif; color: #0f172a; max-width: 900px; margin: 0 auto; padding:20px; font-size:12px;">
                 <div style="text-align:center; margin-bottom:30px; border-bottom:2px solid #0f172a; padding-bottom:15px;">
                     <h1 style="font-family:'Oswald', sans-serif; font-size:24px; margin:0; text-transform:uppercase; letter-spacing:1px;">${window.trainerProfile.name}'s Studio • Trainer Report</h1>
@@ -1351,11 +1383,60 @@
                 <p style="text-align:center; font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px;">Generated securely via Ryal FitHub Clinical Engine</p>
             </div>
         `;
-        document.body.appendChild(printDiv);
-        window.print();
-        setTimeout(() => document.body.removeChild(printDiv), 1000);
+
+        // 4. FIRE THE INVISIBLE IFRAME PRINT (Protects your main app!)
+        window.ryalPrint(htmlContent);
     };
 
+
+
+    // --- RESTORED: BEAUTIFUL WORKOUT HISTORY LOGS ---
+    window.renderClientHistory = () => {
+        const c = window.clients.find(x => x.id === window.curID);
+        if(!c) return;
+        
+        let html = '';
+        const dates = Object.keys(c.logs || {}).sort().reverse();
+        
+        if(dates.length === 0) {
+            html = '<div style="text-align:center; color:var(--text-muted); font-size:12px; padding:10px;">No workouts logged yet.</div>';
+        } else {
+            dates.forEach(d => {
+                let logDetails = c.logs[d].map(ex => {
+                    let setsHtml = ex.sets.map(s => `<span class="badge" style="background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px 10px; font-size:11px;">${s.w}kg x ${s.r} reps</span>`).join(' ');
+                    return `
+                    <div style="padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.05);">
+                        <div style="font-weight:800; font-size:13px; margin-bottom:8px; color:var(--text);">${ex.name} <span style="font-size:10px; color:var(--text-muted); font-weight:600; text-transform:uppercase;">(${ex.workoutName || 'Workout'})</span></div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">${setsHtml}</div>
+                    </div>`;
+                }).join('');
+
+                html += `
+                <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:12px; padding:12px 15px;">
+                    <div onclick="toggleGroup('hist-detail-${d}', this)" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:800; font-size:14px; color:var(--info);">
+                        <span style="display:flex; align-items:center; gap:8px;"><i data-feather="calendar" style="width:14px;"></i> ${d}</span>
+                        <i data-feather="chevron-down" style="width:16px; transition:0.3s; color:var(--text-muted);"></i>
+                    </div>
+                    <div id="hist-detail-${d}" style="display:none; margin-top:10px; border-top:1px solid var(--border); padding-top:5px;">
+                        ${logDetails}
+                    </div>
+                </div>`;
+            });
+        }
+        document.getElementById('clientWorkoutHistoryPane').innerHTML = html;
+        window.updateIcons();
+    };
+
+    const originalOpenOv2 = window.openOv;
+    window.openOv = (id) => { 
+        originalOpenOv2(id);
+        if (typeof window.renderClientHistory === "function") {
+            window.renderClientHistory();
+        }
+    };
+
+    // --- 17. VIP PORTAL DASHBOARD ---
+    // ... rest of your code ...
 
 
     // --- 17. VIP PORTAL DASHBOARD ---
