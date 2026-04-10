@@ -470,6 +470,89 @@
     window.formatTime = (time24) => { if(!time24) return ''; const [h, m] = time24.split(':'); return `${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`; };
 
     // ==========================================
+    // 2.5 MASTER RENDER & INIT ENGINE
+    // ==========================================
+    setTimeout(() => window.updateIcons(), 100); // Forces icons to load instantly
+
+    window.initApp = () => { 
+        document.getElementById('authView').style.display='none'; 
+        document.getElementById('appContainer').style.display='block'; 
+        if(window.trainerProfile) document.getElementById('menuTrainerName').innerText = window.trainerProfile.name.split(' ')[0]; 
+        document.getElementById('attDate').value=window.today; document.getElementById('logDate').value=window.today; document.getElementById('reportMonthInput').value=window.today.slice(0,7); 
+        if(window.trainerProfile && !document.getElementById('attIn').value) document.getElementById('attIn').value = window.trainerProfile.shiftIn; 
+        if(window.trainerProfile && !document.getElementById('attOut').value) document.getElementById('attOut').value = window.trainerProfile.shiftOut; 
+    };
+
+    window.render = () => {
+        if(typeof window.renderPlanner === 'function') window.renderPlanner(); 
+        if(typeof window.renderLeads === 'function') window.renderLeads(); 
+        if(typeof window.renderAttendance === 'function') window.renderAttendance(); 
+        if(typeof window.renderExpenses === 'function') window.renderExpenses(); 
+        if(typeof window.renderRoster === 'function') window.renderRoster(); 
+        if(typeof window.renderRevenue === 'function') window.renderRevenue(); 
+        if(typeof window.renderLibrary === 'function') window.renderLibrary(); 
+        if(typeof window.renderResearch === 'function') window.renderResearch(); 
+        if(typeof window.renderSplitManager === 'function') window.renderSplitManager(); 
+        window.updateIcons(); 
+    };
+
+    window.renderPlanner = () => { 
+        let aC = window.clients.filter(c => Object.keys(c.logs || {}).length < c.sess); 
+        let planClientEl = document.getElementById('planClient');
+        if(planClientEl) planClientEl.innerHTML = `<option value="">-- Choose Client --</option>` + aC.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); 
+        
+        let tE = 0; let html = ""; 
+        window.plans.forEach(p => { 
+            let c = window.clients.find(x => x.id == p.clientId); if(!c) return; 
+            tE += ((c.pay || 0) / (1 + (c.gst || 0)) * (c.ret || 0)) / (c.sess || 1); 
+            html += `<div class="history-row" style="background:var(--card); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; flex-direction:column; align-items:flex-start;"><b style="font-size:14px;color:var(--text);">${c.name}</b><div style="font-size:12px; color:var(--text-muted); margin-top:4px;"><i data-feather="clock" style="width:12px;"></i> ${p.date} @ ${window.formatTime(p.time)} - ${p.workout}</div><button class="btn-sub" style="margin-top:10px; width:100%; border-color:var(--info); color:var(--info);" onclick="completePlan(${p.id})"><i data-feather="check"></i> Mark Complete</button></div>`; 
+        }); 
+        let planListEl = document.getElementById('planList'); if(planListEl) planListEl.innerHTML = html; 
+        let planEarnEl = document.getElementById('planEarnings'); if(planEarnEl) planEarnEl.innerText = `₹${tE.toFixed(0)}`; 
+    };
+
+    window.addPlan = async () => { window.plans.push({ id:Date.now(), clientId:parseInt(document.getElementById('planClient').value), date:document.getElementById('planDate').value, time:document.getElementById('planTime').value, workout:document.getElementById('planWorkout').value }); await window.syncToCloud(); window.render(); };
+    window.completePlan = (id) => { window.plans = window.plans.filter(p => p.id !== id); window.syncToCloud().then(window.render); };
+
+    window.logAtt = async (status) => {
+        const d = document.getElementById('attDate').value || window.today; 
+        const inT = document.getElementById('attIn').value; const outT = document.getElementById('attOut').value;
+        if(!inT || !outT) return window.showAlert("Enter Shift Times");
+        
+        const [inH, inM] = inT.split(':').map(Number); const [outH, outM] = outT.split(':').map(Number); 
+        let totalMins = (outH * 60 + outM) - (inH * 60 + inM); if (totalMins < 0) totalMins += 24 * 60; 
+
+        const [sInH, sInM] = (window.trainerProfile.shiftIn||"07:00").split(':').map(Number); 
+        const [sOutH, sOutM] = (window.trainerProfile.shiftOut||"13:00").split(':').map(Number);
+        let shiftTotalMins = (sOutH * 60 + sOutM) - (sInH * 60 + sInM); if (shiftTotalMins <= 0) shiftTotalMins += 24 * 60;
+
+        let isLate = false; let isHalfDay = false;
+        if (status === 'Present' && totalMins > 0) { 
+            if (totalMins <= (shiftTotalMins / 2) + 10) { isHalfDay = true; } 
+            else {
+                const actualInMins = inH * 60 + inM; const targetInMins = sInH * 60 + sInM;
+                if (actualInMins > (targetInMins + 10) && totalMins < (shiftTotalMins - 10)) { isLate = true; }
+            }
+        }
+        
+        const daysInMonth = new Date(parseInt(d.split('-')[0]), parseInt(d.split('-')[1]), 0).getDate();
+        const dailyRate = (window.trainerProfile.salary || 10000) / daysInMonth;
+        
+        window.shifts.push({ id: Date.now(), date: d, inTime: inT, outTime: outT, status, isLate, isHalfDay, pay: (status==='Present'||status==='Week Off')?dailyRate:0, baseDaily: dailyRate });
+        await window.syncToCloud(); window.render();
+    };
+
+    window.renderAttendance = () => { 
+        let m = window.today.slice(0, 7); 
+        let attListEl = document.getElementById('attList');
+        if(attListEl) attListEl.innerHTML = window.shifts.filter(s => s.date.startsWith(m)).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(s => `<div class="history-row" style="font-size:13px; background:var(--bg); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><div><div style="color:var(--text-muted); font-size:10px; margin-bottom:4px;"><i data-feather="calendar" style="width:10px;"></i> ${s.date}</div><b style="color:var(--text);">${s.status}</b> ${s.isLate?'<span class="badge danger" style="background:var(--danger); color:white;">LATE</span>':''}${s.isHalfDay?'<span class="badge warning" style="background:var(--warning); color:white;">HALF</span>':''}</div><button class="btn-action danger" style="margin:0; padding:8px;" onclick="delShift(${s.id})"><i data-feather="trash-2" style="width:16px;"></i></button></div>`).join(''); 
+        window.updateIcons(); 
+    };
+
+    window.delShift = (id) => { window.shifts = window.shifts.filter(s => s.id !== id); window.syncToCloud().then(window.render); };
+
+
+    // ==========================================
     // 3. AUTHENTICATION & SYNC (Fix #8: API Keys)
     // ==========================================
     window.saveTrainerProfile = async () => { 
