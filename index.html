@@ -580,32 +580,64 @@
 
 <div id="vipPortal" style="display:none;background:var(--bg);color:var(--text);min-height:100vh;padding:40px 20px;">
     <div id="vipLoginBox" class="auth-card" style="margin-top:10vh;background:var(--card);border:1px solid var(--border); padding:30px; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); max-width:400px; margin-left:auto; margin-right:auto;">
-        <h2 style="font-family:'Oswald', sans-serif; text-align:center; margin-bottom:20px;">Client Portal</h2>
-        <input type="text" id="vipIdInput" placeholder="Enter VIP ID" style="text-align:center;font-weight:bold;letter-spacing:1px;">
+        <h2 style="font-family:'Oswald', sans-serif; text-align:center; margin-bottom:20px; font-size:28px;">Client Portal</h2>
+        <input type="text" id="vipIdInput" placeholder="Enter VIP ID" style="text-align:center;font-weight:bold;letter-spacing:1px; font-size:18px;">
         <button class="btn-main" onclick="loginVIP()"><i data-feather="unlock"></i> Access Portal</button>
     </div>
     
-    <div id="vipDashboard" style="display:none;max-width:600px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:30px;">
+    <div id="vipDashboard" style="display:none;max-width:600px;margin:0 auto; padding-bottom:40px;">
+        
+        <div style="text-align:center;margin-bottom:25px;">
             <h1 id="vipLiveName" style="font-size:36px;margin:0;font-family:'Oswald', sans-serif;letter-spacing:-1px;"></h1>
             <div id="vipLiveTrainer" style="font-size:11px;color:var(--text-muted);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:5px;"></div>
         </div>
         
-        <div class="section" style="border-top:4px solid #8b5cf6;">
-            <h3 style="font-size:12px;margin-top:0;text-transform:uppercase;color:var(--text);"><i data-feather="book-open" style="color:#8b5cf6;margin-right:8px;"></i> Clinical Hub</h3>
-            <div id="vipResearchDocs"></div>
+        <div class="stats-grid" style="margin-bottom:25px;">
+            <div class="stat-card"><span class="stat-label">Sessions</span><span id="vipStatSess" class="stat-val">0</span></div>
+            <div class="stat-card"><span class="stat-label">Current Wt</span><span id="vipStatWt" class="stat-val">-</span></div>
+            <div class="stat-card"><span class="stat-label">Body Fat</span><span id="vipStatFat" class="stat-val">-</span></div>
         </div>
-        
+
+        <div class="section" style="border-top:4px solid var(--warning);">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="calendar" style="color:var(--warning);margin-right:8px;"></i> Upcoming Sessions</h3>
+            <div id="vipUpcomingList"></div>
+        </div>
+
         <div class="section" style="border-top:4px solid var(--info);">
-            <h3 style="font-size:12px;margin-top:0;text-transform:uppercase;color:var(--text);"><i data-feather="check-circle" style="color:var(--info);margin-right:8px;"></i> Workout History</h3>
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="activity" style="color:var(--info);margin-right:8px;"></i> Body Composition</h3>
+            <canvas id="vipBcaChart" height="150" style="margin-bottom:15px;"></canvas>
+            <div id="vipBcaList" style="max-height:150px; overflow-y:auto;"></div>
+        </div>
+
+        <div class="section" style="border-top:4px solid #8b5cf6;">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="bar-chart-2" style="color:#8b5cf6;margin-right:8px;"></i> Total Volume Lifted</h3>
+            <canvas id="vipVolumeChart" height="150"></canvas>
+        </div>
+
+        <div class="section" style="border-top:4px solid var(--primary-dark);">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="image" style="color:var(--primary-dark);margin-right:8px;"></i> Physique Timeline</h3>
+            <div id="vipGalleryGrid" class="gallery-grid"></div>
+        </div>
+
+        <div class="section" style="border-top:4px solid var(--danger);">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="check-circle" style="color:var(--danger);margin-right:8px;"></i> Workout History</h3>
             <div id="vipPrevious"></div>
         </div>
         
-        <div class="section" style="border-top:4px solid var(--primary-dark);">
-            <h3 style="font-size:12px;margin-top:0;text-transform:uppercase;color:var(--text);"><i data-feather="video" style="color:var(--primary-dark);margin-right:8px;"></i> Exercise Library</h3>
-            <input type="text" id="vipSearchLib" placeholder="Search..." oninput="searchVipLibrary(this.value)">
-            <div id="vipLibResults" style="max-height:250px;overflow-y:auto;margin-top:10px;"></div>
+        <div class="section" style="border-top:4px solid #10b981;">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="book-open" style="color:#10b981;margin-right:8px;"></i> Clinical Hub</h3>
+            <div id="vipResearchDocs"></div>
         </div>
+        
+        <div class="section" style="border-top:4px solid var(--text-muted);">
+            <h3 style="font-size:12px;margin:0 0 15px 0;text-transform:uppercase;color:var(--text);"><i data-feather="video" style="color:var(--text-muted);margin-right:8px;"></i> Exercise Library</h3>
+            <input type="text" id="vipSearchLib" placeholder="Search exercise videos..." oninput="searchVipLibrary(this.value)" style="margin-bottom:10px;">
+            <div id="vipLibResults" style="max-height:200px;overflow-y:auto;"></div>
+        </div>
+
+        <footer style="text-align:center; padding:20px 10px; font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; border-top:1px dashed var(--border); margin-top:20px;">
+            <i data-feather="shield" style="width:14px;color:var(--info);"></i> POWERED BY RYAL FITHUB PRO
+        </footer>
     </div>
 </div>
 <script type="module">
@@ -2633,8 +2665,11 @@
     };
 
     // ==========================================
-    // 19. VIP PORTAL
+    // 19. VIP PORTAL (FULL CLINICAL DASHBOARD)
     // ==========================================
+    window.vipBcaChartInst = null;
+    window.vipVolChartInst = null;
+
     window.loginVIP = async () => { 
         const id = document.getElementById('vipIdInput').value; 
         document.getElementById('cloudLoader').style.display = 'flex'; 
@@ -2656,29 +2691,116 @@
 
     window.renderLiveVIP = () => { 
         const d = window.vipDataStore; 
-        document.getElementById('vipLiveName').innerText = d.client.name; 
-        document.getElementById('vipLiveTrainer').innerText = `Trainer: ${d.trainerName}`; 
+        const c = d.client;
         
-        document.getElementById('vipResearchDocs').innerHTML = d.researchCenter.map(r => `
-            <div style="background:var(--card); padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid var(--border);">
-                <b>${r.title}</b><br><span style="font-size:12px;color:var(--text-muted);">${r.content}</span>
-            </div>`).join('') || "No research published."; 
+        // 1. Header & Stats
+        document.getElementById('vipLiveName').innerText = c.name; 
+        document.getElementById('vipLiveTrainer').innerText = `Lead Coach: ${d.trainerName}`; 
+        
+        const logsCount = Object.keys(c.logs || {}).length;
+        document.getElementById('vipStatSess').innerText = `${logsCount} / ${c.sess || 0}`;
+        document.getElementById('vipStatWt').innerText = (c.bca && c.bca.length) ? `${c.bca[0].w}kg` : "-";
+        document.getElementById('vipStatFat').innerText = (c.bca && c.bca.length) ? `${c.bca[0].pbf}%` : "-";
+
+        // 2. Upcoming Sessions (Planner)
+        const upcomingHtml = (d.plans || []).map(p => `
+            <div style="background:var(--card); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                <div style="background:rgba(245, 158, 11, 0.1); color:var(--warning); padding:10px; border-radius:10px;"><i data-feather="calendar" style="width:16px;"></i></div>
+                <div>
+                    <b style="font-size:13px;">${p.date} @ ${window.formatTime(p.time)}</b><br>
+                    <span style="font-size:11px; color:var(--text-muted);">${p.workout}</span>
+                </div>
+            </div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No upcoming sessions scheduled.</div>`;
+        document.getElementById('vipUpcomingList').innerHTML = upcomingHtml;
+
+        // 3. BCA Data & Chart
+        if (c.bca && c.bca.length) {
+            const bcaReversed = [...c.bca].reverse(); // Oldest to newest for chart
+            const labels = bcaReversed.map(b => b.date.slice(5)); // Just Month-Day
+            const wData = bcaReversed.map(b => b.w);
+            const fData = bcaReversed.map(b => b.pbf);
             
-        document.getElementById('vipPrevious').innerHTML = Object.keys(d.client.logs || {}).sort().reverse().slice(0, 10).map(date => `
-            <div style="background:var(--bg); padding:10px; border-radius:10px; margin-bottom:8px; border:1px solid var(--border);">
-                <b style="color:var(--info);">${date}</b>: <span style="font-size:12px;">${d.client.logs[date].map(l => l.name).join(', ')}</span>
-            </div>`).join('') || "No logs."; 
-            
-        window.searchVipLibrary(''); 
+            if (window.vipBcaChartInst) window.vipBcaChartInst.destroy();
+            window.vipBcaChartInst = new Chart(document.getElementById('vipBcaChart').getContext('2d'), {
+                type: 'line',
+                data: { labels: labels, datasets: [
+                    { label: 'Weight (kg)', data: wData, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 },
+                    { label: 'Body Fat %', data: fData, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 }
+                ]},
+                options: { responsive: true, scales: { x: { display: true }, y: { display: false } } }
+            });
+
+            document.getElementById('vipBcaList').innerHTML = c.bca.map(b => `
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--border); font-size:12px;">
+                    <span style="color:var(--text-muted); font-weight:800;">${b.date}</span>
+                    <span><b style="color:var(--info);">${b.w}kg</b> | ${b.pbf}% Fat | ${b.smm}kg SMM</span>
+                </div>`).join('');
+        }
+
+        // 4. Volume Chart
+        let volMap = {};
+        Object.keys(c.logs || {}).forEach(date => {
+            let t = 0;
+            c.logs[date].forEach(e => { if (e.sets) e.sets.forEach(s => t += (parseFloat(s.w) || 0) * (parseInt(s.r) || 0)); });
+            if (t > 0) volMap[date] = t;
+        });
+        const volDates = Object.keys(volMap).sort((a,b) => new Date(a) - new Date(b)).slice(-10);
+        
+        if (window.vipVolChartInst) window.vipVolChartInst.destroy();
+        if (volDates.length > 0) {
+            window.vipVolChartInst = new Chart(document.getElementById('vipVolumeChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: volDates.map(d=>d.slice(5)), datasets: [{ label: 'Volume Lifted (kg)', data: volDates.map(d=>volMap[d]), backgroundColor: '#8b5cf6', borderRadius: 4 }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+            });
+        }
+
+        // 5. Physique Timeline (Gallery)
+        const galleryGrid = document.getElementById('vipGalleryGrid');
+        if (c.gallery && c.gallery.length) {
+            galleryGrid.innerHTML = c.gallery.map(p => `
+                <div class="gallery-item">
+                    <img src="${p.img}" class="gallery-img">
+                    <div class="gallery-date">${p.date}</div>
+                </div>`).join('');
+        } else {
+            galleryGrid.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; width:100%;">No physique photos available yet.</div>`;
+        }
+
+        // 6. Workout History
+        document.getElementById('vipPrevious').innerHTML = Object.keys(c.logs || {}).sort().reverse().slice(0, 7).map(date => `
+            <div style="background:var(--card); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);">
+                <b style="color:var(--danger); font-size:13px; display:flex; align-items:center; gap:6px;"><i data-feather="calendar" style="width:14px;"></i> ${date}</b>
+                <div style="font-size:12px; color:var(--text); margin-top:8px; line-height:1.6;">${c.logs[date].map(l => l.name).join(' &bull; ')}</div>
+            </div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No completed workouts yet.</div>`;
+
+        // 7. Clinical Hub
+        document.getElementById('vipResearchDocs').innerHTML = (d.researchCenter || []).map(r => `
+            <div style="background:var(--card); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);">
+                <b style="font-size:13px;">${r.title}</b><br>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5;">${r.content}</div>
+            </div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No research published yet.</div>`;
+
+        // 8. Video Library Init
+        window.searchVipLibrary('');
+        
+        // Trigger Icon Update
+        window.updateIcons();
     };
 
     window.searchVipLibrary = (q) => { 
         const d = window.vipDataStore; 
         document.getElementById('vipLibResults').innerHTML = (d.videoLibrary || []).filter(v => v.name.toLowerCase().includes(q.toLowerCase())).map(v => `
-            <a href="${v.url}" target="_blank" style="display:block; background:var(--card); padding:12px; border-radius:10px; margin-bottom:8px; color:var(--text); text-decoration:none; border:1px solid var(--border);">
-                <b>${v.name}</b><br><span style="font-size:10px;color:var(--text-muted);">${v.muscle}</span>
-            </a>`).join('') || "No videos found."; 
+            <a href="${v.url}" target="_blank" style="display:flex; align-items:center; justify-content:space-between; background:var(--card); padding:12px 15px; border-radius:12px; margin-bottom:8px; color:var(--text); text-decoration:none; border:1px solid var(--border);">
+                <div>
+                    <b style="font-size:13px;">${v.name}</b><br>
+                    <span style="font-size:11px;color:var(--text-muted); text-transform:uppercase; font-weight:800;">${v.muscle}</span>
+                </div>
+                <i data-feather="external-link" style="width:14px; color:var(--info);"></i>
+            </a>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">No videos match your search.</div>`; 
+        window.updateIcons();
     };
+
 
     // ==========================================
     // 20. THE BRAIN (CRITICAL: EXECUTE LAST)
