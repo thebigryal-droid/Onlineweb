@@ -731,9 +731,14 @@
         const m = document.getElementById('sideMenu');
         const o = document.getElementById('menuOverlay');
         if(m) m.classList.remove('open'); 
-        if(o) o.classList.remove('open'); 
+        if(o) {
+            o.classList.remove('open'); 
+            // This is the magic fix: completely removes the invisible shield after it fades out
+            setTimeout(() => { o.style.display = 'none'; }, 300);
+        }
         document.body.style.overflow = ''; 
     };
+
 
     window.showMenuSection = (id) => { 
         window.closeMenu(); 
