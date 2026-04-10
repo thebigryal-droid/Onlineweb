@@ -2787,57 +2787,71 @@
         signOut(auth).then(() => location.reload()); 
     };
 
-    // --- MAIN INITIALIZATION LISTENER ---
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            window.currentUser = user;
-            try {
-                const snap = await getDoc(doc(db, "trainers", user.uid));
-                if (snap.exists()) {
-                    const data = snap.data(); 
-                    window.trainerProfile = data.profile || null; 
-                    window.clients = data.clients || []; 
-                    window.shifts = data.shifts || []; 
-                    window.leads = data.leads || []; 
-                    window.expenses = data.expenses || []; 
-                    window.plans = data.plans || []; 
-                    if(data.workoutDB) window.workoutDB = data.workoutDB; 
-                    window.videoLibrary = data.videoLibrary || []; 
-                    window.researchCenter = data.researchCenter || [];
-                    
-                    document.getElementById('cloudLoader').style.display = 'none';
-                    
-                    if (window.trainerProfile) { 
-                        window.initApp(); 
-                        if(typeof window.render === 'function') window.render(); 
+     // --- MAIN INITIALIZATION LISTENER & VIP ROUTER ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const vipId = urlParams.get('vip');
+
+    if (vipId) {
+        // If a VIP link is clicked, route directly to the client portal
+        document.getElementById('cloudLoader').style.display = 'none';
+        document.getElementById('authView').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'none';
+        document.getElementById('vipPortal').style.display = 'block';
+        document.getElementById('vipIdInput').value = vipId;
+        window.loginVIP(); // Auto-login the client
+    } else {
+        // Otherwise, boot up the normal Trainer UI
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                window.currentUser = user;
+                try {
+                    const snap = await getDoc(doc(db, "trainers", user.uid));
+                    if (snap.exists()) {
+                        const data = snap.data(); 
+                        window.trainerProfile = data.profile || null; 
+                        window.clients = data.clients || []; 
+                        window.shifts = data.shifts || []; 
+                        window.leads = data.leads || []; 
+                        window.expenses = data.expenses || []; 
+                        window.plans = data.plans || []; 
+                        if(data.workoutDB) window.workoutDB = data.workoutDB; 
+                        window.videoLibrary = data.videoLibrary || []; 
+                        window.researchCenter = data.researchCenter || [];
+                        
+                        document.getElementById('cloudLoader').style.display = 'none';
+                        
+                        if (window.trainerProfile) { 
+                            window.initApp(); 
+                            if(typeof window.render === 'function') window.render(); 
+                        } else { 
+                            document.getElementById('authView').style.display='flex'; 
+                            document.getElementById('loginBlock').style.display='none'; 
+                            document.getElementById('setupBlock').style.display='block'; 
+                            document.getElementById('authName').value = user.displayName || ""; 
+                            document.getElementById('authEmail').value = user.email || "";
+                        }
                     } else { 
-                        document.getElementById('authView').style.display='flex'; 
-                        document.getElementById('loginBlock').style.display='none'; 
-                        document.getElementById('setupBlock').style.display='block'; 
+                        document.getElementById('cloudLoader').style.display = 'none'; 
+                        document.getElementById('authView').style.display = 'flex'; 
+                        document.getElementById('loginBlock').style.display = 'none'; 
+                        document.getElementById('setupBlock').style.display = 'block'; 
                         document.getElementById('authName').value = user.displayName || ""; 
                         document.getElementById('authEmail').value = user.email || "";
                     }
-                } else { 
+                } catch (error) { 
                     document.getElementById('cloudLoader').style.display = 'none'; 
-                    document.getElementById('authView').style.display = 'flex'; 
-                    document.getElementById('loginBlock').style.display = 'none'; 
-                    document.getElementById('setupBlock').style.display = 'block'; 
-                    document.getElementById('authName').value = user.displayName || ""; 
-                    document.getElementById('authEmail').value = user.email || "";
+                    window.showAlert("Database Error: " + error.message); 
                 }
-            } catch (error) { 
+            } else {
+                // No User Logged In
                 document.getElementById('cloudLoader').style.display = 'none'; 
-                window.showAlert("Database Error: " + error.message); 
+                document.getElementById('appContainer').style.display = 'none'; 
+                document.getElementById('authView').style.display = 'flex'; 
+                document.getElementById('loginBlock').style.display = 'block'; 
+                document.getElementById('setupBlock').style.display = 'none';
             }
-        } else {
-            // No User Logged In
-            document.getElementById('cloudLoader').style.display = 'none'; 
-            document.getElementById('appContainer').style.display = 'none'; 
-            document.getElementById('authView').style.display = 'flex'; 
-            document.getElementById('loginBlock').style.display = 'block'; 
-            document.getElementById('setupBlock').style.display = 'none';
-        }
-    });
+        });
+    }
 </script>
 </body>
 </html>
