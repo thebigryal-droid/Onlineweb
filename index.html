@@ -650,7 +650,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // ==========================================
@@ -1837,7 +1837,12 @@
         reader.readAsText(file); event.target.value = ''; 
     };
 
-    window.ryalSignIn = () => { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => window.showAlert("Login failed")); };
+        window.ryalSignIn = () => { 
+        signInWithRedirect(auth, new GoogleAuthProvider()).catch(e => {
+            console.error(e);
+            window.showAlert("Login failed: " + e.message);
+        }); 
+    };
     window.ryalSignOut = () => { signOut(auth).then(() => location.reload()); };
 
     const urlParams = new URLSearchParams(window.location.search);
