@@ -657,7 +657,7 @@
     // 1. CORE CONFIGURATION
     // ==========================================
     window.RYAL_USDA_KEY = "rB7nbYA6O8O2Pi6WPAfgFBEwgvIdjF0Vz2mrvLTI";
-    window.RYAL_AI_KEY = "AIzaSyDxqUsQ6HTVCp5UfWA8dKuSnIhs2CJaqnU";
+    window.RYAL_AI_KEY = "AIzaSyB7P9LWKWwhQDiXEf-Rb-Wufrs_QnIZ0rE";
 
     window.onerror = function(msg, url, line) { 
         console.error("RyalFit Error: " + msg + " at line " + line); 
@@ -1787,6 +1787,108 @@
             
         window.ryalPrint(htmlContent); 
     };
+
+    // ==========================================
+    // 19. VIP PORTAL
+    // ==========================================
+    window.vipBcaChartInst = null;
+    window.vipVolChartInst = null;
+
+    window.loginVIP = async () => { 
+        const id = document.getElementById('vipIdInput').value.trim(); 
+        
+        if (!id) {
+            return window.showAlert("Please enter a VIP ID.");
+        }
+
+        document.getElementById('cloudLoader').style.display = 'flex'; 
+        
+        try { 
+            const snap = await getDoc(doc(db, "vip_portals", id)); 
+            if (snap.exists()) { 
+                window.vipDataStore = snap.data(); 
+                document.getElementById('vipLoginBox').style.display = 'none'; 
+                document.getElementById('vipDashboard').style.display = 'block'; 
+                window.renderLiveVIP(); 
+            } else { 
+                window.showAlert("Invalid VIP ID. Please check your link."); 
+            } 
+        } catch(e) { 
+            console.error("VIP Login Error:", e);
+            window.showAlert("Portal Access Blocked: " + e.message); 
+        } 
+        
+        document.getElementById('cloudLoader').style.display = 'none'; 
+    };
+
+    window.renderLiveVIP = () => { 
+        const d = window.vipDataStore; 
+        const c = d.client;
+        
+        document.getElementById('vipLiveName').innerText = c.name; 
+        document.getElementById('vipLiveTrainer').innerText = `Lead Coach: ${d.trainerName}`; 
+        
+        const logsCount = Object.keys(c.logs || {}).length;
+        document.getElementById('vipStatSess').innerText = `${logsCount} / ${c.sess || 0}`;
+        document.getElementById('vipStatWt').innerText = (c.bca && c.bca.length) ? `${c.bca[0].w}kg` : "-";
+        document.getElementById('vipStatFat').innerText = (c.bca && c.bca.length) ? `${c.bca[0].pbf}%` : "-";
+
+        const upcomingHtml = (d.plans || []).map(p => `
+            <div style="background:var(--card); padding:12px; border-radius:12px; border:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                <div style="background:rgba(245, 158, 11, 0.1); color:var(--warning); padding:10px; border-radius:10px;"><i data-feather="calendar" style="width:16px;"></i></div>
+                <div><b style="font-size:13px;">${p.date} @ ${window.formatTime(p.time)}</b><br><span style="font-size:11px; color:var(--text-muted);">${p.workout}</span></div>
+            </div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No upcoming sessions scheduled.</div>`;
+        document.getElementById('vipUpcomingList').innerHTML = upcomingHtml;
+
+        if (c.bca && c.bca.length) {
+            const bcaReversed = [...c.bca].reverse(); 
+            if (window.vipBcaChartInst) window.vipBcaChartInst.destroy();
+            window.vipBcaChartInst = new Chart(document.getElementById('vipBcaChart').getContext('2d'), {
+                type: 'line',
+                data: { labels: bcaReversed.map(b => b.date.slice(5)), datasets: [
+                    { label: 'Weight (kg)', data: bcaReversed.map(b => b.w), borderColor: '#970747', backgroundColor: '#970747', tension: 0.3 },
+                    { label: 'Body Fat %', data: bcaReversed.map(b => b.pbf), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3 }
+                ]},
+                options: { responsive: true, scales: { x: { display: true }, y: { display: false } } }
+            });
+            document.getElementById('vipBcaList').innerHTML = c.bca.map(b => `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--border); font-size:12px;"><span style="color:var(--text-muted); font-weight:800;">${b.date}</span><span><b style="color:var(--primary);">${b.w}kg</b> | ${b.pbf}% Fat | ${b.smm}kg SMM</span></div>`).join('');
+        }
+
+        let volMap = {};
+        Object.keys(c.logs || {}).forEach(date => {
+            let t = 0; c.logs[date].forEach(e => { if (e.sets) e.sets.forEach(s => t += (parseFloat(s.w) || 0) * (parseInt(s.r) || 0)); });
+            if (t > 0) volMap[date] = t;
+        });
+        const volDates = Object.keys(volMap).sort((a,b) => new Date(a) - new Date(b)).slice(-10);
+        
+        if (window.vipVolChartInst) window.vipVolChartInst.destroy();
+        if (volDates.length > 0) {
+            window.vipVolChartInst = new Chart(document.getElementById('vipVolumeChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: volDates.map(d=>d.slice(5)), datasets: [{ label: 'Volume Lifted (kg)', data: volDates.map(d=>volMap[d]), backgroundColor: '#970747', borderRadius: 4 }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } } } }
+            });
+        }
+
+        const galleryGrid = document.getElementById('vipGalleryGrid');
+        if (c.gallery && c.gallery.length) {
+            galleryGrid.innerHTML = c.gallery.map(p => `<div class="gallery-item"><img src="${p.img}" class="gallery-img"><div class="gallery-date">${p.date}</div></div>`).join('');
+        } else { galleryGrid.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:10px; text-align:center; width:100%;">No physique photos available yet.</div>`; }
+
+        document.getElementById('vipPrevious').innerHTML = Object.keys(c.logs || {}).sort().reverse().slice(0, 7).map(date => `<div style="background:var(--card); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);"><b style="color:var(--danger); font-size:13px; display:flex; align-items:center; gap:6px;"><i data-feather="calendar" style="width:14px;"></i> ${date}</b><div style="font-size:12px; color:var(--text); margin-top:8px; line-height:1.6;">${c.logs[date].map(l => l.name).join(' &bull; ')}</div></div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No completed workouts yet.</div>`;
+
+        document.getElementById('vipResearchDocs').innerHTML = (window.vipDataStore.researchCenter || []).map(r => `<div style="background:var(--card); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);"><b style="font-size:13px;">${r.title}</b><br><div style="font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5;">${r.content}</div></div>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center;">No research published yet.</div>`;
+
+        window.searchVipLibrary('');
+        window.updateIcons();
+    };
+
+    window.searchVipLibrary = (q) => { 
+        const d = window.vipDataStore; 
+        document.getElementById('vipLibResults').innerHTML = (d.videoLibrary || []).filter(v => v.name.toLowerCase().includes(q.toLowerCase())).map(v => `<a href="${v.url}" target="_blank" style="display:flex; align-items:center; justify-content:space-between; background:var(--card); padding:12px 15px; border-radius:12px; margin-bottom:8px; color:var(--text); text-decoration:none; border:1px solid var(--border);"><div><b style="font-size:13px;">${v.name}</b><br><span style="font-size:11px;color:var(--text-muted); text-transform:uppercase; font-weight:800;">${v.muscle}</span></div><i data-feather="external-link" style="width:14px; color:var(--info);"></i></a>`).join('') || `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">No videos match your search.</div>`; 
+        window.updateIcons();
+    };
+
 
     // ==========================================
     // 20. THE BRAIN
