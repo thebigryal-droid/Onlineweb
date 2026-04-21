@@ -1492,7 +1492,7 @@
         const prompt = `Act as an elite sports scientist. Review this client and answer based on this clinical data. Format with basic HTML (<b>, <br>) but NO markdown. Question: "${msg}"\n\nClient Data: ${c ? c.name : 'Unknown'}\nGoal: ${c ? c.goal : 'Not specified'}\nBody: ${w}kg, Fat ${pbf}%\nMacros: ${macros}\nRecent Logs:\n${recentWorkouts}`; 
         
         try { 
-            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
+            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
@@ -1535,7 +1535,7 @@
         const prompt = `Act as an elite sports scientist. Review this client and provide a concise, 3-step actionable protocol to break their plateau. Format with plain HTML tags (<b>, <br>). No markdown asterisks.\nClient: ${c.name}, ${c.gender}, ${c.age}yrs\nMain Goal: ${c.goal || 'Not specified'}\nBody: ${w}kg, Fat ${pbf}%\nMacros: ${macros}\nRecent Logs:\n${recentWorkouts}`; 
         
         try { 
-            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
+            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
             }, 8000); 
             
@@ -1564,7 +1564,7 @@
         const prompt = `Act as a fitness coach. ${extra}Provide exactly 6 exercises for: ${input}. STRICT RULE: Output ONLY a comma-separated list of names. NO intro text, NO outro text, NO bullet points, NO markdown. Just the comma-separated names.`; 
         
         try { 
-            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
+            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
             }, 6000); 
             
@@ -1597,7 +1597,7 @@
         const prompt = `Act as a physical therapist. ${extra}Provide exactly 4 stretches for: ${input}. STRICT RULE: Output ONLY a comma-separated list of names. NO intro text, NO outro text, NO bullet points, NO markdown. Just the comma-separated names.`; 
         
         try { 
-            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
+            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) 
             }, 6000); 
             
@@ -1626,7 +1626,7 @@
         resBox.style.display = 'none'; window.updateIcons(); 
         
         try { 
-            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
+            const response = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${window.RYAL_AI_KEY}`, { 
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `Act as a clinical sports pharmacologist. Provide a detailed, objective clinical profile for ${compound}. Discuss half-life, pros, risks, dosages. HTML tags (<b>, <br>, <ul>, <li>) only. No markdown.` }] }] }) 
             }, 10000); 
             
