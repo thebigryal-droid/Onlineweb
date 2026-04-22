@@ -657,22 +657,27 @@
     // 1. CORE CONFIGURATION
     // ==========================================
     window.RYAL_USDA_KEY = "rB7nbYA6O8O2Pi6WPAfgFBEwgvIdjF0Vz2mrvLTI";
-    window.RYAL_AI_KEY = "AIzaSyB7P9LWKWwhQDiXEf-Rb-Wufrs_QnIZ0rE";
+    
+    // Remember to paste your fresh Gemini key here!
+    window.RYAL_AI_KEY = "AIzaSyB8V6IdIZiv6Rd417RinDb7E6yw8JXfrPI"; 
 
     window.onerror = function(msg, url, line) { 
         console.error("RyalFit Error: " + msg + " at line " + line); 
     };
 
+    // Your brand new rfth-pro Firebase Engine
     const app = initializeApp({ 
-        apiKey: "AIzaSyBg9h_yMnIc0xLFWsu8AivB_oJHOHTuqvw", 
-        authDomain: "ryalfithub.firebaseapp.com", 
-        projectId: "ryalfithub", 
-        storageBucket: "ryalfithub.firebasestorage.app", 
-        messagingSenderId: "539542106057", 
-        appId: "1:539542106057:web:edebd1bb70919137dd8218" 
+        apiKey: "AIzaSyCCB71JtHMCWCG4kNs6XkcGYwvu-2k8JiQ",
+        authDomain: "rfth-pro.firebaseapp.com",
+        projectId: "rfth-pro",
+        storageBucket: "rfth-pro.firebasestorage.app",
+        messagingSenderId: "494901173654",
+        appId: "1:494901173654:web:5ab8a4f4435eaf2d60d1b7"
     });
+    
     const auth = getAuth(app); 
     const db = getFirestore(app);
+
 
     // GLOBAL STATE VARIABLES
     window.currentUser = null; 
